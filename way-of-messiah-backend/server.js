@@ -3,7 +3,16 @@ const cors = require("cors");
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
+const mongoose = require("mongoose");
+require("dotenv").config();
 
+mongoose
+    .connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    .then(() => console.log("✅ Connected to MongoDB Atlas"))
+    .catch((err) => console.error("MongoDB connection error:", err));
 
 const app = express();
 app.use(cors());
@@ -38,3 +47,43 @@ app.post("/create-checkout-session", async(req, res) => {
 });
 
 app.listen(4242, () => console.log("Stripe backend running on port 4242"));
+app.post("/testimonies", async(req, res) => {
+    const auth = req.headers.authorization;
+    if (auth !== `Bearer ${process.env.ADMIN_TOKEN}`) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Replace this with your real database or file source
+    const sampleTestimonies = [{
+            name: "John Doe",
+            email: "john@example.com",
+            message: "Life changing experience.",
+            imageUrl: "",
+        },
+        {
+            name: "Jane Smith",
+            email: "jane@example.com",
+            message: "I felt Yahuah's presence.",
+            imageUrl: "",
+        },
+    ];
+
+    res.json(sampleTestimonies);
+});
+app.post("/testimonies/:id/approve", authenticateAdmin, async(req, res) => {
+    const { id } = req.params;
+    // update testimony in database or mark as approved
+    res.json({ message: `Testimony ${id} approved.` });
+});
+app.delete("/testimonies/:id", authenticateAdmin, async(req, res) => {
+    const { id } = req.params;
+    // delete testimony from your database or file
+    res.json({ message: `Testimony ${id} deleted.` });
+});
+
+function authenticateAdmin(req, res, next) {
+    if (req.headers.authorization !== `Bearer ${process.env.ADMIN_TOKEN}`) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    next();
+}
