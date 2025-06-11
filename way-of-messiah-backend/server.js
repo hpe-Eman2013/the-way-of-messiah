@@ -26,7 +26,7 @@ function authenticate(req, res, next) {
     next();
 }
 // temp to check
-console.log("MONGODB_URI:", process.env.MONGODB_URI);
+console.log('🧪 MONGODB_URI from env:', process.env.MONGODB_URI); // <-- Check this in Render logs
 
 // Get all testimonies (for admin)
 app.post("/testimonies", authenticate, async(req, res) => {
