@@ -8,7 +8,7 @@ export default defineConfig({
     },
     server: {
         fs: {
-            strict: false,
+            allow: ['.'],
         },
     },
     // 👇 required for React Router on static hosts like Render
