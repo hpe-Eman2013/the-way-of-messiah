@@ -18,7 +18,7 @@ const SubmitTestimony = () => {
     setStatus("");
     try {
       const response = await fetch(
-        "https://api.thewayofmessiah.net/submit-testimony",
+        "https://api.thewayofmessiah.net",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
