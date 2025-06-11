@@ -18,13 +18,14 @@ const SubmitTestimony = () => {
     setStatus("");
     try {
       const response = await fetch(
-        "https://api.the-way-of-messiah-frontend.onrender.com/submit-testimony",
+        "https://api.thewayofmessiah.net/submit-testimony",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
         }
       );
+      
       const data = await response.json();
       if (response.ok) {
         setStatus("✅ Testimony submitted successfully!");
