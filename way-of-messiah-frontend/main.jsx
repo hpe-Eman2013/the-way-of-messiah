@@ -2,8 +2,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import SubmitTestimony from './SubmitTestimony';
-import AdminPage from './AdminPage';
+import SubmitTestimony from './src/pages/SubmitTestimony';
+import AdminPage from './src/pages/AdminPage';
 
 const App = () => (
   <Router>
