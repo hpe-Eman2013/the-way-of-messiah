@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-
+import { useNavigate } from "react-router-dom";
+const navigate = useNavigate();
 export default function SubmitTestimony() {
   const [formData, setFormData] = useState({
     name: "",
@@ -34,7 +35,7 @@ export default function SubmitTestimony() {
       });
 
       if (!res.ok) throw new Error("Submission failed");
-      setStatus("Testimony submitted successfully!");
+      navigate("/thank-you");
     } catch (err) {
       setStatus("There was an error submitting your testimony.");
     }
