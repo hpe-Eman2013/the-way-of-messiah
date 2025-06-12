@@ -16,6 +16,7 @@ export default function Home() {
         </p>
         <p className="text-gray-700 dark:text-gray-300 max-w-3xl mb-12 text-left">
           <strong className="block text-xl mb-2">Home Assemblies</strong>
+          <br />
           We believe that the biblical model of meeting in private homes is the
           best way to create an atmosphere of personal accountability and
           self-governance. During the first century, the believers could not use
@@ -24,20 +25,27 @@ export default function Home() {
           accept Yahusha as the Messiah. Therefore, they met in the homes of
           each other and were trained in the doctrine of Yahusha, the Son of
           Yahuah (or Yahuah, the Almighty One), as they preached the Gospel from
-          house to house.</p>
-          <p><strong className="block text-xl mt-6 mb-2">Giving</strong>
+          house to house.
+        </p>
+        <p>
+          <strong className="block text-xl mt-6 mb-2">Giving</strong>
+          <br />
           We believe what the Bible admonishes about giving, that it should be:
           <ul className="list-disc list-inside">
             <li>Sacrificial</li>
             <li>Generous</li>
             <li>Reciprocal</li>
             <li>Willing</li>
-          </ul></p>
-          <p><strong className="block text-xl mt-6 mb-2">Tithing</strong>
+          </ul>
+        </p>
+        <p>
+          <strong className="block text-xl mt-6 mb-2">Tithing</strong>
+          <br />
           We do not practice tithing, which is the giving of a tenth of your
           earnings, but only ask that one gives according to what their heart
-          has resolved.
-          <strong className="block text-xl mt-6 mb-2">Schools</strong>
+          has resolved.</p>
+          <p><strong className="block text-xl mt-6 mb-2">Schools</strong>
+          <br />
           It is said that "knowledge is power," and with the right knowledge one
           can achieve great things! The vision of our ministry is to open
           schools to train both young and old in various fields of study.
