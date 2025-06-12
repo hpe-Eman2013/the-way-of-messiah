@@ -13,8 +13,7 @@ root.render(
       <Routes>
         <Route path="/" element={<SubmitTestimony />} />
         <Route path="/admin" element={<AdminPage />} />
-        <Route path="/thank-you" element={<ThankYou />} />{" "}
-        {/* ← add this line */}
+        <Route path="/thank-you" element={<ThankYou />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
