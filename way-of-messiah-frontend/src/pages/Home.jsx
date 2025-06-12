@@ -5,13 +5,20 @@ import backgroundImage from "../assets/middle-east-wheat.jpg";
 
 export default function Home() {
   return (
-    <div
-      className="min-h-screen bg-fixed bg-cover bg-center bg-no-repeat text-white"
-      style={{ backgroundImage: `url(${backgroundImage})` }}
-    >
+    <div className="relative min-h-screen text-white">
+      <div
+        className="absolute inset-0 bg-fixed bg-cover bg-center"
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+          opacity: 0.4,
+          zIndex: -1,
+        }}
+      ></div>
       <Header />
       <div className="flex flex-col items-center text-center px-6 py-12">
-        <div className="bg-black bg-opacity-50 p-6 rounded-lg max-w-4xl">
+        <div className="bg-black bg-opacity-60 p-6 rounded-lg max-w-4xl">
           <h1 className="text-4xl font-bold mb-4">
             Welcome to The Way of Messiah
           </h1>
