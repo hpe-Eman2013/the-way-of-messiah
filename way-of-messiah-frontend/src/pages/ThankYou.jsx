@@ -3,9 +3,16 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
+import useSound from "use-sound";
+import cheerSfx from "../assets/cheer.mp3";
 
 export default function ThankYou() {
   const { width, height } = useWindowSize();
+  const [play] = useSound(cheerSfx);
+
+  React.useEffect(() => {
+    play();
+  }, [play]);
 
   return (
     <motion.div
@@ -29,13 +36,21 @@ export default function ThankYou() {
         Thank you!
       </motion.h1>
       <motion.p
-        className="text-gray-700 dark:text-gray-300 mb-6"
+        className="text-gray-700 dark:text-gray-300 mb-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6, duration: 0.5 }}
       >
         Your testimony has been submitted successfully.
       </motion.p>
+      <motion.blockquote
+        className="italic text-gray-600 dark:text-gray-400 mb-6 max-w-md"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.9, duration: 0.5 }}
+      >
+        "We overcome by the blood of the Lamb and the word of our testimony."
+      </motion.blockquote>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
