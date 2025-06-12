@@ -12,6 +12,7 @@ export default function Home() {
           backgroundImage: `url(${backgroundImage})`,
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
+          backgroundPosition: "center",
           opacity: 0.4,
           zIndex: -1,
         }}
