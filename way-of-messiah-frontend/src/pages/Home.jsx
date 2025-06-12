@@ -9,7 +9,7 @@ export default function Home() {
       <div
         className="absolute inset-0 bg-fixed bg-cover bg-center"
         style={{
-          backgroundImage: `url(${backgroundImage})`,
+          backgroundImage: `url("${backgroundImage}")`,
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
           backgroundPosition: "center",
