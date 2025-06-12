@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <div
       className="min-h-screen bg-fixed bg-cover bg-center bg-no-repeat text-white"
-      style={{ backgroundImage: `url(${backgroundImage})` }}
+      style={{ backgroundImage: `url(${backgroundImage})`, backgroundAttachment: 'fixed', backgroundSize: 'cover', backgroundPosition: 'center' }}
     >
       <Header />
       <div className="flex flex-col items-center text-center px-6 py-12">
