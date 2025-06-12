@@ -24,16 +24,16 @@ export default function Home() {
           accept Yahusha as the Messiah. Therefore, they met in the homes of
           each other and were trained in the doctrine of Yahusha, the Son of
           Yahuah (or Yahuah, the Almighty One), as they preached the Gospel from
-          house to house.
-          <strong className="block text-xl mt-6 mb-2">Giving</strong>
+          house to house.</p>
+          <p><strong className="block text-xl mt-6 mb-2">Giving</strong>
           We believe what the Bible admonishes about giving, that it should be:
           <ul className="list-disc list-inside">
             <li>Sacrificial</li>
             <li>Generous</li>
             <li>Reciprocal</li>
             <li>Willing</li>
-          </ul>
-          <strong className="block text-xl mt-6 mb-2">Tithing</strong>
+          </ul></p>
+          <p><strong className="block text-xl mt-6 mb-2">Tithing</strong>
           We do not practice tithing, which is the giving of a tenth of your
           earnings, but only ask that one gives according to what their heart
           has resolved.
