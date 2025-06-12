@@ -11,8 +11,11 @@ export default function ThankYou() {
   const [play] = useSound(cheerSfx);
 
   React.useEffect(() => {
-    play();
+    if (typeof window !== "undefined") {
+      setTimeout(() => play(), 500);
+    }
   }, [play]);
+  
 
   return (
     <motion.div
