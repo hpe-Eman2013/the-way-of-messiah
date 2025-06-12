@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Header from "../components/Header";
-import backgroundImage from "../assets/middle-east-wheat.jpg";
 
 export default function Home() {
   return (
@@ -9,11 +8,11 @@ export default function Home() {
       <div
         className="absolute inset-0 bg-fixed bg-cover bg-center"
         style={{
-          backgroundImage: `url("${backgroundImage}")`,
+          backgroundImage: 'url("/middle-east-wheat.jpg")',
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          opacity: 0.4,
+          opacity: 0.6,
           zIndex: -1,
         }}
       ></div>
