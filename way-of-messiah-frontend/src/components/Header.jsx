@@ -1,30 +1,35 @@
 import React from "react";
-import logo from '../assets/logo.png';
-<img src={logo} alt="Great Seal" className="w-12 h-12 mr-3" />
+import { NavLink } from "react-router-dom";
+import logo from "../assets/logo.png";
 
 export default function Header() {
+  const navLinkStyles = ({ isActive }) =>
+    isActive
+      ? "text-blue-600 font-semibold border-b-2 border-blue-600"
+      : "text-gray-700 dark:text-gray-300 hover:text-blue-600";
+
   return (
-    <header className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 shadow-md">
-      <div className="flex items-center">
+    <header className="w-full flex items-center justify-between px-6 py-4 shadow bg-white dark:bg-gray-800">
+      <div className="flex items-center space-x-3">
         <img
-          src="/logo_128.png"
-          alt="Great Seal - The Way of Messiah"
-          className="w-12 h-12 mr-3"
+          src={logo}
+          alt="The Way of Messiah Seal"
+          className="h-10 w-10 object-contain"
         />
-        <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+        <span className="text-lg font-bold text-gray-800 dark:text-white">
           The Way of Messiah
-        </h1>
+        </span>
       </div>
-      <nav className="space-x-4">
-        <a href="/" className="text-gray-600 dark:text-gray-300 hover:underline">
+      <nav className="flex space-x-6">
+        <NavLink to="/" className={navLinkStyles}>
           Home
-        </a>
-        <a href="/submit-testimony" className="text-gray-600 dark:text-gray-300 hover:underline">
-          Submit Testimony
-        </a>
-        <a href="/donate" className="text-gray-600 dark:text-gray-300 hover:underline">
-          Donate
-        </a>
+        </NavLink>
+        <NavLink to="/submit-testimony" className={navLinkStyles}>
+          Submit
+        </NavLink>
+        <NavLink to="/admin" className={navLinkStyles}>
+          Admin
+        </NavLink>
       </nav>
     </header>
   );
