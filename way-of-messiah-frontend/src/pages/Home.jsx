@@ -1,23 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Header from "../components/Header";
+import backgroundImage from "../assets/middle-east-wheat.jpg";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen text-white">
-      <div
-        className="absolute inset-0 bg-fixed bg-cover bg-center"
-        style={{
-          backgroundImage: 'url("/middle-east-wheat.jpg")',
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          zIndex: -1,
-        }}
-      ></div>
+    <div
+      className="min-h-screen bg-fixed bg-cover bg-center bg-no-repeat text-white"
+      style={{ backgroundImage: `url(${backgroundImage})` }}
+    >
       <Header />
       <div className="flex flex-col items-center text-center px-6 py-12">
-        <div className="bg-black bg-opacity-60 p-6 rounded-lg max-w-4xl">
+        <div className="bg-black bg-opacity-50 p-6 rounded-lg max-w-4xl">
           <h1 className="text-4xl font-bold mb-4">
             Welcome to The Way of Messiah
           </h1>
