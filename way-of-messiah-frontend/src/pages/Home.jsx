@@ -12,7 +12,6 @@ export default function Home() {
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          opacity: 0.8,
           zIndex: -1,
         }}
       ></div>
