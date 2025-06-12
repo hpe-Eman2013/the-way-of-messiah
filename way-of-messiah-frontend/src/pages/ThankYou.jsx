@@ -1,8 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 export default function ThankYou() {
+  const { width, height } = useWindowSize();
+
   return (
     <motion.div
       className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-900 text-center p-6"
@@ -10,6 +14,12 @@ export default function ThankYou() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
     >
+      <Confetti
+        width={width}
+        height={height}
+        numberOfPieces={200}
+        recycle={false}
+      />
       <motion.h1
         className="text-3xl font-bold text-green-600 mb-4"
         initial={{ scale: 0.8 }}
