@@ -5,6 +5,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const Testimony = require("./models/Testimony");
+const testimoniesRoute = require("./routes/testimonies");
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ console.log("🧪 MONGODB_URI from env:", process.env.MONGODB_URI);
 
 app.use(cors());
 app.use(express.json());
+app.use("/testimonies", testimoniesRoute);
 
 // MongoDB Connection
 mongoose
