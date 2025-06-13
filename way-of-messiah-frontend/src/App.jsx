@@ -3,10 +3,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Import your pages/components for each route:
 import Home from "./pages/Home";
-import Admin from "./pages/Admin";
+import Admin from "./pages/AdminPage";
 import SubmitTestimony from "./pages/SubmitTestimony";
 import ThankYou from "./pages/ThankYou";
-import Testimonies from "./pages/Testimonies";
+import Testimonies from "./pages/TestimoniesPage";
 
 function App() {
   return (
