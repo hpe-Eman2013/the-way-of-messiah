@@ -7,7 +7,12 @@ export default function Home() {
   return (
     <div
       className="min-h-screen bg-fixed bg-cover bg-center bg-no-repeat text-white"
-      style={{ backgroundImage: `url(${backgroundImage})`, backgroundAttachment: 'fixed', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      style={{
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
       <Header />
       <div className="flex flex-col items-center text-center px-6 py-12">
@@ -70,25 +75,25 @@ export default function Home() {
             </div>
           </div>
           <div className="space-x-4 mt-8">
-  <Link
-    to="/submit-testimony"
-    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-  >
-    Submit Testimony
-  </Link>
-  <Link
-    to="/admin"
-    className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-  >
-    Admin Page
-  </Link>
-  <Link
-    to="/testimonies"
-    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-  >
-    View Testimonies
-  </Link>
-</div>
+            <Link
+              to="/submit-testimony"
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Submit Testimony
+            </Link>
+            <Link
+              to="/admin"
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+            >
+              Admin Page
+            </Link>
+            <Link
+              to="/testimonies"
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              View Testimonies
+            </Link>
+          </div>
         </div>
       </div>
     </div>
