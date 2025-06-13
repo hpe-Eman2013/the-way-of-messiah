@@ -5,7 +5,7 @@ import SubmitTestimony from "./pages/SubmitTestimony";
 import Layout from "./components/Layout";
 import ThankYou from "./pages/ThankYou";
 import Home from "./pages/Home";
-import Testimonies from "./pages/TestimoniesPage";
+import TestimoniesPage from "./pages/TestimoniesPage";
 
 function App() {
   return (
