@@ -70,19 +70,25 @@ export default function Home() {
             </div>
           </div>
           <div className="space-x-4 mt-8">
-            <Link
-              to="/submit-testimony"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Submit Testimony
-            </Link>
-            <Link
-              to="/admin"
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-            >
-              Admin Page
-            </Link>
-          </div>
+  <Link
+    to="/submit-testimony"
+    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+  >
+    Submit Testimony
+  </Link>
+  <Link
+    to="/admin"
+    className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+  >
+    Admin Page
+  </Link>
+  <Link
+    to="/testimonies"
+    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+  >
+    View Testimonies
+  </Link>
+</div>
         </div>
       </div>
     </div>
