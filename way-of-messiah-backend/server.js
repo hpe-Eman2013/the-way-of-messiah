@@ -5,6 +5,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const testimoniesRoute = require("./routes/testimonies");
+const Testimony = require("./models/Testimony");
 
 dotenv.config();
 
