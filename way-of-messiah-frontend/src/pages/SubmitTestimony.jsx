@@ -10,6 +10,7 @@ export default function SubmitTestimony() {
   });
   const [status, setStatus] = useState("");
 
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
@@ -30,7 +31,7 @@ export default function SubmitTestimony() {
     };
 
     try {
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const BASE_URL = import.meta.env.VITE_API_URL;
       const res = await fetch(`${BASE_URL}/submit-testimony`, {
         method: "POST",
         headers: {
