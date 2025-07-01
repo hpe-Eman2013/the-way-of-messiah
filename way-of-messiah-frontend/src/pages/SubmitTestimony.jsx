@@ -23,16 +23,20 @@ export default function SubmitTestimony() {
     e.preventDefault();
     setStatus("Submitting...");
 
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("message", formData.message);
-    if (formData.image) data.append("image", formData.image);
+    const payload = {
+      name: formData.name,
+      message: formData.message,
+      imageUrl: "", // if not using image upload yet
+    };
 
     try {
       const BASE_URL = import.meta.env.VITE_API_BASE_URL;
       const res = await fetch(`${BASE_URL}/submit-testimony`, {
         method: "POST",
-        body: data,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error("Submission failed");
@@ -41,6 +45,7 @@ export default function SubmitTestimony() {
       setStatus("There was an error submitting your testimony.");
     }
   };
+  
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-4 bg-white dark:bg-gray-900 rounded shadow">
