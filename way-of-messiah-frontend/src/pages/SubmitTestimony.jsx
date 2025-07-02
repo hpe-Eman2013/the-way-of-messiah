@@ -41,6 +41,7 @@ export default function SubmitTestimony() {
       });
 
       if (!res.ok) throw new Error("Submission failed");
+      alert("Thank you! Your testimony has been submitted for review.");
       navigate("/thank-you");
     } catch (err) {
       setStatus("There was an error submitting your testimony.");

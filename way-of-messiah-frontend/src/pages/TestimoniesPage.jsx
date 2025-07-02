@@ -21,7 +21,17 @@ export default function TestimoniesPage() {
     };
     fetchTestimonies();
   }, []);
-
+const handleApproval = async (id, approved) => {
+    const BASE_URL = import.meta.env.VITE_API_URL;
+    try {
+      await axios.patch(`${BASE_URL}/testimonies/${id}/approve`, { approved });      
+      setTestimonies((prev) =>
+        prev.map((t) => (t._id === id ? { ...t, approved } : t))
+      );
+    } catch (err) {
+      alert("Error updating approval status.");
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-100 text-black">
       <Header />
@@ -36,29 +46,50 @@ export default function TestimoniesPage() {
         )}
 
         <div className="space-y-6">
-          {testimonies.map(({ _id, name, message, imageUrl, createdAt }) => (
-            <div
-              key={_id}
-              className="bg-white p-6 rounded-lg shadow border border-gray-200"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-xl font-semibold text-gray-800">{name}</h2>
-                {createdAt && (
-                  <span className="text-sm text-gray-500">
-                    {new Date(createdAt).toLocaleDateString()}
-                  </span>
+          {testimonies.map(
+            ({ _id, name, message, imageUrl, createdAt, approved }) => (
+              <div
+                key={_id}
+                className="bg-white p-6 rounded-lg shadow border border-gray-200"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    {name}
+                  </h2>
+                  {createdAt && (
+                    <span className="text-sm text-gray-500">
+                      {new Date(createdAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                <p className="text-gray-700 whitespace-pre-line">{message}</p>
+                {imageUrl && (
+                  <img
+                    src={imageUrl}
+                    alt={`${name}'s testimony`}
+                    className="mt-4 max-h-60 object-contain rounded border"
+                  />
                 )}
+                <div className="mt-4 flex gap-2">
+                  {!approved ? (
+                    <button
+                      onClick={() => handleApproval(_id, true)}
+                      className="px-3 py-1 bg-green-600 text-white rounded"
+                    >
+                      Approve
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleApproval(_id, false)}
+                      className="px-3 py-1 bg-yellow-600 text-white rounded"
+                    >
+                      Unapprove
+                    </button>
+                  )}
+                </div>
               </div>
-              <p className="text-gray-700 whitespace-pre-line">{message}</p>
-              {imageUrl && (
-                <img
-                  src={imageUrl}
-                  alt={`${name}'s testimony`}
-                  className="mt-4 max-h-60 object-contain rounded border"
-                />
-              )}
-            </div>
-          ))}
+            )
+          )}
         </div>
       </div>
     </div>
