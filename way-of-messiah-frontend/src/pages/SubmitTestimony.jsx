@@ -23,23 +23,19 @@ export default function SubmitTestimony() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus("Submitting...");
-
-    const payload = {
-      name: formData.name,
-      message: formData.message,
-      imageUrl: "", // if not using image upload yet
-    };
-
+  
+    const data = new FormData();
+    data.append("name", formData.name);
+    data.append("message", formData.message);
+    if (formData.image) data.append("image", formData.image);
+  
     try {
       const BASE_URL = import.meta.env.VITE_API_URL;
       const res = await fetch(`${BASE_URL}/submit-testimony`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: data,
       });
-
+  
       if (!res.ok) throw new Error("Submission failed");
       alert("Thank you! Your testimony has been submitted for review.");
       navigate("/thank-you");
@@ -47,6 +43,7 @@ export default function SubmitTestimony() {
       setStatus("There was an error submitting your testimony.");
     }
   };
+  
   
 
   return (
