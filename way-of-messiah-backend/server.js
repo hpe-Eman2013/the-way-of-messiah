@@ -51,32 +51,32 @@ app.get("/", (req, res) => {
     res.send("The Way of Messiah API is running");
 });
 // post code
-app.post("/submit-testimony", upload.single("image"), async (req, res) => {
+app.post("/submit-testimony", upload.single("image"), async(req, res) => {
     const { name, email, message } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
-  
+
     if (!message) {
-      return res.status(400).json({ error: "Message is required." });
+        return res.status(400).json({ error: "Message is required." });
     }
-  
+
     try {
-      const testimony = new Testimony({
-        name,
-        email,
-        message,
-        imageUrl,
-        approved: false,
-        createdAt: new Date(),
-      });
-  
-      await testimony.save();
-      res.status(200).json({ message: "Testimony submitted successfully!" });
+        const testimony = new Testimony({
+            name,
+            email,
+            message,
+            imageUrl,
+            approved: false,
+            createdAt: new Date(),
+        });
+
+        await testimony.save();
+        res.status(200).json({ message: "Testimony submitted successfully!" });
     } catch (error) {
-      console.error("MongoDB Save Error:", error);
-      res.status(500).json({ error: "Failed to save testimony." });
+        console.error("MongoDB Save Error:", error);
+        res.status(500).json({ error: "Failed to save testimony." });
     }
-  });
-  
+});
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
