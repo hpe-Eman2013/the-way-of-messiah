@@ -1,71 +1,125 @@
-// routes/admin.js
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-const Testimony = require("../models/Testimony");
-const router = express.Router();
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Header from "../components/Header";
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const JWT_SECRET = process.env.JWT_SECRET;
+export default function AdminPage() {
+  const [testimonies, setTestimonies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-// Login endpoint
-router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+  const token = localStorage.getItem("adminToken");
+  const BASE_URL = import.meta.env.VITE_API_URL;
 
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    const token = jwt.sign({ username: username }, JWT_SECRET, { expiresIn: "1h" });
-    return res.status(200).json({ token });
-  }
+  useEffect(() => {
+    const fetchTestimonies = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/admin/testimonies`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setTestimonies(res.data);
+      } catch (err) {
+        setError("Failed to load testimonies.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTestimonies();
+  }, []);
 
-  return res.status(401).json({ error: "Invalid login credentials." });
-});
+  const handleApproval = async (id, approved) => {
+    try {
+      await axios.patch(
+        `${BASE_URL}/admin/testimonies/${id}/approve`,
+        { approved },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setSuccess(`Testimony has been ${approved ? "approved" : "unapproved"}.`);
+      setTimeout(() => setSuccess(""), 3000);
+      setTestimonies((prev) =>
+        prev.map((t) => (t._id === id ? { ...t, approved } : t))
+      );
+    } catch {
+      alert("Error updating approval status.");
+    }
+  };
 
-// Middleware to verify token
-function verifyToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this testimony?")) return;
+    try {
+      await axios.delete(`${BASE_URL}/admin/testimonies/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTestimonies((prev) => prev.filter((t) => t._id !== id));
+      setSuccess("Testimony deleted.");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch {
+      alert("Error deleting testimony.");
+    }
+  };
 
-  if (!token) return res.status(403).json({ error: "Token required" });
+  return (
+    <div className="min-h-screen bg-gray-100 text-black">
+      <Header />
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6 text-center">Admin Dashboard</h1>
+        {loading && <p className="text-center">Loading...</p>}
+        {error && <p className="text-center text-red-500">{error}</p>}
+        {success && <p className="text-center text-green-600 font-medium">{success}</p>}
+        {testimonies.length === 0 && !loading && (
+          <p className="text-center text-gray-600">No testimonies to display.</p>
+        )}
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(401).json({ error: "Invalid token" });
-    req.admin = decoded;
-    next();
-  });
+        <div className="space-y-6">
+          {testimonies.map(
+            ({ _id, name, message, imageUrl, createdAt, approved }) => (
+              <div
+                key={_id}
+                className="bg-white p-6 rounded-lg shadow border border-gray-200"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    {name || "Anonymous"}
+                  </h2>
+                  {createdAt && (
+                    <span className="text-sm text-gray-500">
+                      {new Date(createdAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                <p className="text-gray-700 whitespace-pre-line">{message}</p>
+                {imageUrl && (
+                  <img
+                    src={imageUrl}
+                    alt={`${name}'s testimony`}
+                    className="mt-4 max-h-60 object-contain rounded border"
+                  />
+                )}
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={() => handleApproval(_id, !approved)}
+                    className={`px-3 py-1 rounded text-white ${
+                      approved ? "bg-yellow-600" : "bg-green-600"
+                    }`}
+                  >
+                    {approved ? "Unapprove" : "Approve"}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(_id)}
+                    className="px-3 py-1 bg-red-600 text-white rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
-
-// Protected route to fetch all testimonies (admin only)
-router.get("/testimonies", verifyToken, async (req, res) => {
-  try {
-    const testimonies = await Testimony.find().sort({ createdAt: -1 });
-    res.json(testimonies);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch testimonies" });
-  }
-});
-
-// Protected route to delete a testimony (admin only)
-router.delete("/testimonies/:id", verifyToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await Testimony.findByIdAndDelete(id);
-    res.json({ message: "Testimony deleted successfully." });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete testimony." });
-  }
-});
-
-// Protected route to approve/unapprove a testimony (admin only)
-router.patch("/testimonies/:id/approve", verifyToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { approved } = req.body;
-    const updated = await Testimony.findByIdAndUpdate(id, { approved }, { new: true });
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to update approval status." });
-  }
-});
-
-module.exports = router;
