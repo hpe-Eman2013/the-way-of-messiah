@@ -2,6 +2,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const Testimony = require("../models/Testimony");
 const router = express.Router();
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
@@ -34,9 +35,25 @@ function verifyToken(req, res, next) {
   });
 }
 
-// Example protected route
-router.get("/protected", verifyToken, (req, res) => {
-  res.status(200).json({ message: "Access granted to protected admin route." });
+// Protected route to fetch all testimonies (admin only)
+router.get("/testimonies", verifyToken, async (req, res) => {
+  try {
+    const testimonies = await Testimony.find().sort({ createdAt: -1 });
+    res.json(testimonies);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch testimonies" });
+  }
+});
+
+// Protected route to delete a testimony (admin only)
+router.delete("/testimonies/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Testimony.findByIdAndDelete(id);
+    res.json({ message: "Testimony deleted successfully." });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete testimony." });
+  }
 });
 
 // Export both the router and the middleware
