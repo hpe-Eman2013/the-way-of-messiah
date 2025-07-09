@@ -1,64 +1,40 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import Header from "../components/Header";
+// routes/admin.js
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const router = express.Router();
 
-export default function TestimoniesPage() {
-  const [testimonies, setTestimonies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const JWT_SECRET = process.env.JWT_SECRET;
 
-  useEffect(() => {
-    const fetchTestimonies = async () => {
-      try {
-        const BASE_URL = import.meta.env.VITE_API_URL;
-        const response = await axios.get(`${BASE_URL}/testimonies`);
-        setTestimonies(response.data);
-      } catch (err) {
-        setError("Failed to load testimonies.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTestimonies();
-  }, []);
+// Login endpoint
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
 
-  return (
-    <div className="min-h-screen bg-gray-100 text-black">
-      <Header />
-      <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6 text-center">Testimonies</h1>
-        {loading && <p className="text-center">Loading...</p>}
-        {error && <p className="text-center text-red-500">{error}</p>}
-        {testimonies.length === 0 && !loading && (
-          <p className="text-center text-gray-600">No testimonies to display.</p>
-        )}
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: "1h" });
+    return res.json({ token });
+  }
 
-        <div className="space-y-6">
-          {testimonies.map(({ _id, name, message, imageUrl, createdAt }) => (
-            <div
-              key={_id}
-              className="bg-white p-6 rounded-lg shadow border border-gray-200"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-xl font-semibold text-gray-800">{name}</h2>
-                {createdAt && (
-                  <span className="text-sm text-gray-500">
-                    {new Date(createdAt).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-700 whitespace-pre-line">{message}</p>
-              {imageUrl && (
-                <img
-                  src={imageUrl}
-                  alt={`${name}'s testimony`}
-                  className="mt-4 max-h-60 object-contain rounded border"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return res.status(401).json({ error: "Invalid credentials" });
+});
+
+// Middleware to verify token
+function verifyToken(req, res, next) {
+  const token = req.headers["authorization"]?.split(" ")[1];
+  if (!token) return res.status(403).json({ error: "Token required" });
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ error: "Invalid token" });
+    req.admin = decoded;
+    next();
+  });
 }
+
+// Example protected route
+router.get("/protected", verifyToken, (req, res) => {
+  res.json({ message: "Access granted to protected admin route." });
+});
+
+module.exports = { router, verifyToken };

@@ -8,36 +8,33 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
-      const BASE_URL = import.meta.env.VITE_API_URL;
-      const res = await axios.post(`${BASE_URL}/admin/login`, {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/login`, {
         username,
         password,
       });
 
       localStorage.setItem("adminToken", res.data.token);
-      navigate("/admin/dashboard");
+      navigate("/admin");
     } catch (err) {
-      setError("Invalid credentials. Please try again.");
+      setError("Invalid login credentials.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded shadow-md w-full max-w-md"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+    <div className="max-w-sm mx-auto mt-10 p-6 bg-white shadow rounded">
+      <h2 className="text-2xl font-bold mb-4 text-center">Admin Login</h2>
+      <form onSubmit={handleLogin} className="space-y-4">
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full p-2 border rounded mb-4"
+          className="w-full p-2 border rounded"
           required
         />
         <input
@@ -45,7 +42,7 @@ export default function AdminLogin() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded mb-4"
+          className="w-full p-2 border rounded"
           required
         />
         <button
@@ -54,7 +51,7 @@ export default function AdminLogin() {
         >
           Login
         </button>
-        {error && <p className="mt-4 text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
       </form>
     </div>
   );
