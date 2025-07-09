@@ -7,7 +7,7 @@ export default function TestimoniesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  
+
   useEffect(() => {
     const fetchTestimonies = async () => {
       try {
@@ -22,14 +22,13 @@ export default function TestimoniesPage() {
     };
     fetchTestimonies();
   }, []);
-const handleApproval = async (id, approved) => {
+
+  const handleApproval = async (id, approved) => {
     const BASE_URL = import.meta.env.VITE_API_URL;
     try {
-      await axios.patch(`${BASE_URL}/testimonies/${id}/approve`, { approved });      
+      await axios.patch(`${BASE_URL}/testimonies/${id}/approve`, { approved });
       setTestimonies((prev) =>
-        prev.map((t) =>
-          t._id === id ? { ...t, approved, approvedAt: approved ? new Date().toISOString() : null } : t
-        )
+        prev.map((t) => (t._id === id ? { ...t, approved } : t))
       );
       setSuccess(`Testimony has been ${approved ? "approved" : "unapproved"}.`);
       setTimeout(() => setSuccess(""), 3000);
@@ -37,6 +36,7 @@ const handleApproval = async (id, approved) => {
       alert("Error updating approval status.");
     }
   };
+
   return (
     <div className="min-h-screen bg-gray-100 text-black">
       <Header />
@@ -50,13 +50,14 @@ const handleApproval = async (id, approved) => {
         )}
 
         <div className="space-y-6">
-          {testimonies.map(({ _id, name, message, imageUrl, createdAt, approved, approvedAt }) => (
+          {testimonies.map(
+            ({ _id, name, message, imageUrl, createdAt, approved }) => (
               <div
                 key={_id}
                 className="bg-white p-6 rounded-lg shadow border border-gray-200"
               >
                 <div className="flex justify-between items-center mb-2">
-                <h2 className="text-xl font-semibold text-gray-800">{name}</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">{name}</h2>
                   {createdAt && (
                     <span className="text-sm text-gray-500">
                       {new Date(createdAt).toLocaleDateString()}
@@ -71,11 +72,6 @@ const handleApproval = async (id, approved) => {
                     className="mt-4 max-h-60 object-contain rounded border"
                   />
                 )}
-              {approvedAt && (
-                <p className="text-sm text-green-600 mt-2">
-                  Approved on: {new Date(approvedAt).toLocaleDateString()}
-                </p>
-              )}
                 <div className="mt-4 flex gap-2">
                   {!approved ? (
                     <button
@@ -94,7 +90,8 @@ const handleApproval = async (id, approved) => {
                   )}
                 </div>
               </div>
-          ))}
+            )
+          )}
         </div>
       </div>
     </div>
