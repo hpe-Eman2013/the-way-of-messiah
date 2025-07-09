@@ -12,7 +12,7 @@ export default function TestimoniesPage() {
       try {
         const BASE_URL = import.meta.env.VITE_API_URL;
         const response = await axios.get(`${BASE_URL}/testimonies`);
-        setTestimonies(approvedOnly);
+        setTestimonies(response.data);
       } catch (err) {
         setError("Failed to load testimonies.");
       } finally {
