@@ -3,15 +3,11 @@ const router = express.Router();
 const Testimony = require("../models/Testimony");
 const fs = require("fs");
 const path = require("path");
+const { verifyToken } = require("./admin");
 
-// GET /testimonies - only approved ones
-router.get("/", async(req, res) => {
+router.get("/all", verifyToken, async(req, res) => {
     try {
-        const showAll = req.query.all === "true";
-        const filter = showAll ? {} : { approved: true };
-        const testimonies = await Testimony.find(filter).sort({
-            createdAt: -1,
-        });
+        const testimonies = await Testimony.find().sort({ createdAt: -1 });
         res.json(testimonies);
     } catch (err) {
         res.status(500).json({ error: "Server error while fetching testimonies" });
@@ -29,7 +25,7 @@ router.patch("/:id/approve", async(req, res) => {
             return res.status(404).json({ error: "Testimony not found." });
         res.json(updated);
     } catch (err) {
-        res.status(500).json({ error: "Failed to update approval status." });
+        res.status(500).json({ error: "Failed to fetch testimonies" });
     }
 });
 
