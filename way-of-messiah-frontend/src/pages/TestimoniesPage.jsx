@@ -28,7 +28,13 @@ const handleApproval = async (id, approved) => {
       await axios.patch(`${BASE_URL}/testimonies/${id}/approve`, { approved });      
       setTestimonies((prev) =>
         prev.map((t) =>
-          t._id === id ? { ...t, approved, approvedAt: approved ? new Date().toISOString() : null } : t
+          t._id === id
+            ? {
+                ...t,
+                approved,
+                approvedAt: approved ? new Date().toISOString() : null,
+              }
+            : t
         )
       );
       setSuccess(`Testimony has been ${approved ? "approved" : "unapproved"}.`);
@@ -37,6 +43,21 @@ const handleApproval = async (id, approved) => {
       alert("Error updating approval status.");
     }
   };
+
+  const handleDelete = async (id) => {
+    const BASE_URL = import.meta.env.VITE_API_URL;
+    if (!window.confirm("Are you sure you want to delete this testimony?"))
+      return;
+    try {
+      await axios.delete(`${BASE_URL}/testimonies/${id}`);
+      setTestimonies((prev) => prev.filter((t) => t._id !== id));
+      setSuccess("Testimony deleted.");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      alert("Error deleting testimony.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 text-black">
       <Header />
@@ -44,7 +65,9 @@ const handleApproval = async (id, approved) => {
         <h1 className="text-3xl font-bold mb-6 text-center">Testimonies</h1>
         {loading && <p className="text-center">Loading...</p>}
         {error && <p className="text-center text-red-500">{error}</p>}
-        {success && <p className="text-center text-green-600 font-medium">{success}</p>}
+        {success && (
+          <p className="text-center text-green-600 font-medium">{success}</p>
+        )}
         {testimonies.length === 0 && !loading && (
           <p className="text-center text-gray-600">No testimonies to display.</p>
         )}
@@ -92,6 +115,12 @@ const handleApproval = async (id, approved) => {
                       Unapprove
                     </button>
                   )}
+                  <button
+                    onClick={() => handleDelete(_id)}
+                    className="px-3 py-1 bg-red-600 text-white rounded"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
           ))}
