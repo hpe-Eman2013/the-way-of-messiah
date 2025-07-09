@@ -22,7 +22,9 @@ router.post("/login", async(req, res) => {
 
 // Middleware to verify token
 function verifyToken(req, res, next) {
-    const token = req.headers["authorization"] && req.headers["authorization"].split(" ")[1];
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
     if (!token) return res.status(403).json({ error: "Token required" });
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
