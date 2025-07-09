@@ -56,5 +56,16 @@ router.delete("/testimonies/:id", verifyToken, async (req, res) => {
   }
 });
 
-// Export both the router and the middleware
-module.exports = { router, verifyToken };
+// Protected route to approve/unapprove a testimony (admin only)
+router.patch("/testimonies/:id/approve", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approved } = req.body;
+    const updated = await Testimony.findByIdAndUpdate(id, { approved }, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update approval status." });
+  }
+});
+
+module.exports = router;
