@@ -7,7 +7,9 @@ const path = require("path");
 // GET /testimonies - only approved ones
 router.get("/", async(req, res) => {
     try {
-        const testimonies = await Testimony.find({ approved: true }).sort({
+        const showAll = req.query.all === "true";
+        const filter = showAll ? {} : { approved: true };
+        const testimonies = await Testimony.find(filter).sort({
             createdAt: -1,
         });
         res.json(testimonies);
