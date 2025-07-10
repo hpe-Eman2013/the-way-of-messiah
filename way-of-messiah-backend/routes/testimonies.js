@@ -5,14 +5,17 @@ const fs = require("fs");
 const path = require("path");
 const { verifyToken } = require("./admin");
 
-router.get("/all", verifyToken, async(req, res) => {
+router.get("/", async(req, res) => {
     try {
-        const testimonies = await Testimony.find().sort({ createdAt: -1 });
+        const testimonies = await Testimony.find({ approved: true }).sort({
+            createdAt: -1,
+        });
         res.json(testimonies);
     } catch (err) {
-        res.status(500).json({ error: "Server error while fetching testimonies" });
+        res.status(500).json({ error: "Failed to fetch testimonies" });
     }
 });
+
 // PATCH /testimonies/:id/approve
 router.patch("/:id/approve", async(req, res) => {
     try {
