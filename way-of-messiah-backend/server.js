@@ -8,7 +8,7 @@ const fs = require("fs");
 
 const testimoniesRoute = require("./routes/testimonies");
 const Testimony = require("./models/Testimony");
-const { router: adminRouter, verifyToken } = require("./routes/admin");
+const adminRouter = require("./routes/admin");
 dotenv.config();
 
 const app = express();
