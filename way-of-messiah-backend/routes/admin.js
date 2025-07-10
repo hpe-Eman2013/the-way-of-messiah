@@ -10,62 +10,62 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Login endpoint
-router.post("/login", async(req, res) => {
-    const { username, password } = req.body;
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
 
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        const token = jwt.sign({ username: username }, JWT_SECRET, { expiresIn: "1h" });
-        return res.status(200).json({ token });
-    }
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const token = jwt.sign({ username: username }, JWT_SECRET, { expiresIn: "1h" });
+    return res.status(200).json({ token });
+  }
 
-    return res.status(401).json({ error: "Invalid login credentials." });
+  return res.status(401).json({ error: "Invalid login credentials." });
 });
 
 // Middleware to verify token
 function verifyToken(req, res, next) {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-    if (!token) return res.status(403).json({ error: "Token required" });
+  if (!token) return res.status(403).json({ error: "Token required" });
 
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) return res.status(401).json({ error: "Invalid token" });
-        req.admin = decoded;
-        next();
-    });
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ error: "Invalid token" });
+    req.admin = decoded;
+    next();
+  });
 }
 
 // Protected route to fetch all testimonies (admin only)
-router.get("/testimonies", verifyToken, async(req, res) => {
-    try {
-        const testimonies = await Testimony.find().sort({ createdAt: -1 });
-        res.json(testimonies);
-    } catch (err) {
-        res.status(500).json({ error: "Failed to fetch testimonies" });
-    }
+router.get("/testimonies", verifyToken, async (req, res) => {
+  try {
+    const testimonies = await Testimony.find().sort({ createdAt: -1 });
+    res.json(testimonies);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch testimonies" });
+  }
 });
 
 // Protected route to delete a testimony (admin only)
-router.delete("/testimonies/:id", verifyToken, async(req, res) => {
-    try {
-        const { id } = req.params;
-        await Testimony.findByIdAndDelete(id);
-        res.json({ message: "Testimony deleted successfully." });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to delete testimony." });
-    }
+router.delete("/testimonies/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Testimony.findByIdAndDelete(id);
+    res.json({ message: "Testimony deleted successfully." });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete testimony." });
+  }
 });
 
 // Protected route to approve/unapprove a testimony (admin only)
-router.patch("/testimonies/:id/approve", verifyToken, async(req, res) => {
-    try {
-        const { id } = req.params;
-        const { approved } = req.body;
-        const updated = await Testimony.findByIdAndUpdate(id, { approved }, { new: true });
-        res.json(updated);
-    } catch (err) {
-        res.status(500).json({ error: "Failed to update approval status." });
-    }
+router.patch("/testimonies/:id/approve", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approved } = req.body;
+    const updated = await Testimony.findByIdAndUpdate(id, { approved }, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update approval status." });
+  }
 });
 
-module.exports = router;
+module.exports = { router, verifyToken };
