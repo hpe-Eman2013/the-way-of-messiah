@@ -1,58 +1,62 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import axios from "axios";
 
-export default function AdminLogin() {
+const AdminLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/login`, {
+      const BASE_URL = import.meta.env.VITE_API_URL;
+      const res = await axios.post(`${BASE_URL}/auth/login`, {
         username,
         password,
       });
 
       localStorage.setItem("adminToken", res.data.token);
-      navigate("/admin");
+      window.location.href = "/admin/dashboard"; // or wherever your dashboard lives
     } catch (err) {
-      setError("Invalid login credentials.");
+      setError("Invalid credentials");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-sm mx-auto mt-10 p-6 bg-white shadow rounded">
-      <h2 className="text-2xl font-bold mb-4 text-center">Admin Login</h2>
-      <form onSubmit={handleLogin} className="space-y-4">
+    <div style={{ padding: "2rem" }}>
+      <h2>Admin Login</h2>
+      <form onSubmit={handleLogin}>
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full p-2 border rounded"
           required
         />
+        <br />
+        <br />
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded"
           required
         />
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Login
+        <br />
+        <br />
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
         </button>
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
       </form>
+      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
-}
+};
+
+export default AdminLogin;
