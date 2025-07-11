@@ -7,14 +7,14 @@ const { verifyToken } = require("./admin");
 
 router.get("/", async(req, res) => {
     try {
-        const testimonies = await Testimony.find().sort({
-            createdAt: -1,
-        });
+        const testimonies = await Testimony.find({ approved: true });
+        console.log("Found:", testimonies);
         res.json(testimonies);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch testimonies" });
     }
 });
+
 
 // PATCH /testimonies/:id/approve
 router.patch("/:id/approve", async(req, res) => {
