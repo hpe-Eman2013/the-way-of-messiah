@@ -15,6 +15,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+const adminAuthRoutes = require("./routes/adminAuth");
 
 // Middleware
 app.use(cors());
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use(express.static("public"));
 app.use("/api/testimonies", testimoniesRoute);
 app.use("/admin", adminRouter);
+app.use("/auth", adminAuthRoutes);
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
