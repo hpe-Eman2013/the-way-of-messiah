@@ -9,6 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; // store this in 
 // Temporary Registration Route (only for setting up first admin)
 router.post("/register", async(req, res) => {
     try {
+        console.log("BODY:", req.body);
         const { username, password } = req.body;
         // Check if user exists
         const existingUser = await AdminUser.findOne({ username });
