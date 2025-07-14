@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const AdminUser = require("../models/AdminUser");
+const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; // store this in .env in production
 
@@ -10,16 +10,23 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; // store this in 
 router.post("/register", async(req, res) => {
     try {
         const { username, password } = req.body;
-        const existing = await AdminUser.findOne({ username });
-        if (existing)
+        // Check if user exists
+        const existingUser = await AdminUser.findOne({ username });
+        if (existingUser) {
             return res.status(400).json({ error: "Username already exists" });
+        }
 
-        const passwordHash = await bcrypt.hash(password, 10);
-        const newUser = new AdminUser({ username, passwordHash });
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        // Save user
+        const newUser = new AdminUser({ username, passwordHash, isAdmin: true });
         await newUser.save();
 
         res.status(201).json({ message: "Admin created" });
     } catch (err) {
+        console.error("❌ Registration error:", err);
         res.status(500).json({ error: "Registration failed" });
     }
 });
