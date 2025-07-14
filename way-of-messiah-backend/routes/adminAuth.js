@@ -11,6 +11,12 @@ router.post("/register", async(req, res) => {
     try {
         console.log("BODY:", req.body);
         const { username, password } = req.body;
+        // Validate inputs
+        if (!username || !password) {
+            return res
+                .status(400)
+                .json({ error: "Username and password are required" });
+        }
         // Check if user exists
         const existingUser = await AdminUser.findOne({ username });
         if (existingUser) {
@@ -24,8 +30,7 @@ router.post("/register", async(req, res) => {
         // Save user
         const newUser = new AdminUser({ username, passwordHash, isAdmin: true });
         await newUser.save();
-
-        res.status(201).json({ message: "Admin created" });
+        res.json({ message: "Admin created" });
     } catch (err) {
         console.error("❌ Registration error:", err);
         res.status(500).json({ error: "Registration failed" });
