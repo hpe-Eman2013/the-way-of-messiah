@@ -13,6 +13,10 @@ router.get("/admin/all", verifyToken, async(req, res) => {
         res.status(500).json({ error: "Failed to fetch testimonies" });
     }
 });
+//code for protected routes
+router.get("/protected", verifyToken, (req, res) => {
+    res.json({ message: `Access granted for ${req.user.username}` });
+});
 //code with verify
 
 router.get("/admin/ping", verifyToken, (req, res) => {
