@@ -3,16 +3,20 @@ const router = express.Router();
 const Testimony = require("../models/Testimony");
 const fs = require("fs");
 const path = require("path");
-const { verifyToken } = require("./admin");
+const verifyToken = require("../middleware/verifyToken");
 
-router.get("/", async(req, res) => {
+router.get("/admin/all", verifyToken, async(req, res) => {
     try {
-        const testimonies = await Testimony.find({ approved: true });
-        console.log("Found:", testimonies);
+        const testimonies = await Testimony.find().sort({ createdAt: -1 });
         res.json(testimonies);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch testimonies" });
     }
+});
+//code with verify
+
+router.get("/admin/ping", verifyToken, (req, res) => {
+    res.json({ message: `Access granted for ${req.user.username}` });
 });
 
 
