@@ -3,7 +3,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Testimony = require("../models/Testimony");
-const verifyToken = require("../verifyToken");  // ✅ Import shared verifyToken
+const verifyToken = require('../middleware/verifyToken');  // ✅ Import shared verifyToken
 
 const router = express.Router();
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
