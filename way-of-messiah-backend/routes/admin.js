@@ -31,18 +31,7 @@ router.get("/testimonies", verifyToken, async (req, res) => {
         res.status(500).json({ error: "Failed to fetch testimonies" });
     }
 });
-
-// Protected route to delete a testimony (admin only)
-router.delete("/testimonies/:id", verifyToken, async(req, res) => {
-    try {
-        const { id } = req.params;
-        await Testimony.findByIdAndDelete(id);
-        res.json({ message: "Testimony deleted successfully." });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to delete testimony." });
-    }
-});
-
+// Admin Only Routes
 // Protected route to approve/unapprove a testimony (admin only)
 router.patch("/testimonies/:id/approve", verifyToken, async(req, res) => {
     try {
@@ -53,6 +42,46 @@ router.patch("/testimonies/:id/approve", verifyToken, async(req, res) => {
     } catch (err) {
         res.status(500).json({ error: "Failed to update approval status." });
     }
+});
+// Protected route to delete a testimony (admin only)
+router.delete("/testimonies/:id", verifyToken, async(req, res) => {
+    try {
+        const { id } = req.params;
+        await Testimony.findByIdAndDelete(id);
+        res.json({ message: "Testimony deleted successfully." });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete testimony." });
+    }
+});
+// General Routes
+// ✅ Approve testimony
+router.patch('/testimonies/:id/approve', verifyToken, async (req, res) => {
+  try {
+    const updated = await Testimony.findByIdAndUpdate(req.params.id, { approved: true }, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to approve testimony' });
+  }
+});
+
+// ❌ Disapprove testimony
+router.patch('/testimonies/:id/disapprove', verifyToken, async (req, res) => {
+  try {
+    const updated = await Testimony.findByIdAndUpdate(req.params.id, { approved: false }, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to disapprove testimony' });
+  }
+});
+
+// 🗑️ Delete testimony
+router.delete('/testimonies/:id', verifyToken, async (req, res) => {
+  try {
+    await Testimony.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Testimony deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete testimony' });
+  }
 });
 
 module.exports = router;
