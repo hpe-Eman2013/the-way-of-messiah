@@ -5,6 +5,16 @@ const fs = require("fs");
 const path = require("path");
 const verifyToken = require("../middleware/verifyToken");
 
+// Public route to get approved testimonies
+router.get('/', async (req, res) => {
+  try {
+    const approvedTestimonies = await Testimony.find({ approved: true }).sort({ createdAt: -1 });
+    res.json(approvedTestimonies);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch testimonies' });
+  }
+});
+
 router.get("/admin/all", verifyToken, async(req, res) => {
     try {
         const testimonies = await Testimony.find().sort({ createdAt: -1 });
