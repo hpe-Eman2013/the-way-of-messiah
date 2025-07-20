@@ -15,6 +15,7 @@ router.post("/login", async(req, res) => {
 
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
         const token = jwt.sign({ username: username }, JWT_SECRET, { expiresIn: "1h" });
+        console.log("JWT_SECRET loaded:", JWT_SECRET);
         return res.status(200).json({ token });
     }
 
