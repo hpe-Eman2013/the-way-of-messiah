@@ -22,8 +22,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 app.use("/api/testimonies", testimoniesRoute);
-app.use("/admin", adminRouter);
-app.use("/auth", adminAuthRoutes);
+app.use("/api/admin", adminRouter);
+app.use("/api/auth", adminAuthRoutes);
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
@@ -49,7 +49,7 @@ app.get("/", (req, res) => {
 });
 
 // GET approved testimonies
-app.get("/testimonies", async(req, res) => {
+app.get("/api/testimonies", async(req, res) => {
     try {
         const testimonies = await Testimony.find({ approved: true }).sort({ createdAt: -1 });
         res.json(testimonies);
@@ -59,7 +59,7 @@ app.get("/testimonies", async(req, res) => {
 });
 
 // PATCH to approve/unapprove a testimony
-app.patch("/testimonies/:id/approve", async(req, res) => {
+app.patch("/api/testimonies/:id/approve", async(req, res) => {
     try {
         const { id } = req.params;
         const { approved } = req.body;
@@ -71,7 +71,7 @@ app.patch("/testimonies/:id/approve", async(req, res) => {
 });
 
 // POST testimony (with optional image upload)
-app.post("/submit-testimony", upload.single("image"), async(req, res) => {
+app.post("/api/submit-testimony", upload.single("image"), async(req, res) => {
     const { name, message } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
 
