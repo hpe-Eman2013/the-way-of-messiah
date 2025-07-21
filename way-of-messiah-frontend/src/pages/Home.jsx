@@ -4,6 +4,25 @@ import Header from "../components/Header";
 import backgroundImage from "../assets/middle-east-wheat.jpg";
 
 export default function Home() {
+   const isDev = import.meta.env.MODE === "development";
+
+  if (!isDev) {
+    // Show Coming Soon screen in production
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center bg-black text-white text-center"
+        style={{ padding: "2rem" }}
+      >
+        <div>
+          <h1 className="text-4xl font-bold mb-4">Coming Soon</h1>
+          <p className="text-lg text-gray-300">
+            The Way of Messiah website is under construction.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // Dev mode: show full site content
   return (
     <div
       className="min-h-screen bg-fixed bg-cover bg-center bg-no-repeat text-white"

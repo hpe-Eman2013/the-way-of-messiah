@@ -1,7 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// Import your pages/components for each route:
 import Home from "./pages/Home";
 import Admin from "./pages/AdminPage";
 import SubmitTestimony from "./pages/SubmitTestimony";
@@ -14,15 +13,16 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Define each route path and its component */}
         <Route path="/" element={<Home />} />
-        <Route path="/admin" element={<PrivateRoute> <Admin /> </PrivateRoute>} />
-        <Route path="/admin-login" element={<AdminLogin />} />
+        {import.meta.env.MODE === "development" && (
+          <>
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
+          </>
+        )}
         <Route path="/submit-testimony" element={<SubmitTestimony />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/testimonies" element={<Testimonies />} />
-        {/* (Optional) Catch-all route for undefined paths:
-        <Route path="*" element={<NotFound />} /> */}
       </Routes>
     </BrowserRouter>
   );
