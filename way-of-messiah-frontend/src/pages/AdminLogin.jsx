@@ -18,7 +18,7 @@ const AdminLogin = () => {
         username,
         password,
       });
-
+      console.log("🔐 TOKEN FROM BACKEND:", res.data.token); // Add this
       localStorage.setItem("adminToken", res.data.token);
       window.location.href = "/admin/dashboard"; // or wherever your dashboard lives
     } catch (err) {
