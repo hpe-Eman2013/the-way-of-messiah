@@ -16,10 +16,7 @@ router.post("/login", async (req, res) => {
 
     if ( String(username).trim() === String(process.env.ADMIN_USERNAME).trim() &&
         String(password).trim() === String(process.env.ADMIN_PASSWORD).trim()) {
-        console.log("🔐 Attempting login with:", username, password);
-        console.log("✅ Expected:", ADMIN_USERNAME, ADMIN_PASSWORD);
         const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1h" });
-        console.log("🔐 Signing token with:", process.env.JWT_SECRET);
         return res.status(200).json({ token });
     }
 

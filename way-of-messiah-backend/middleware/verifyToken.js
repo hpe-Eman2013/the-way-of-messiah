@@ -12,7 +12,6 @@ function verifyToken(req, res, next) {
     req.admin = decoded;
     next();
   });
-  console.log("🔐 Signing token with:", JWT_SECRET);
 }
 
 

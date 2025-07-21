@@ -11,8 +11,6 @@ const password = process.env.ADMIN_PASSWORD;
 // Temporary Registration Route (only for setting up first admin)
 router.post("/register", async(req, res) => {
     try {
-        console.log("BODY:", req.body);
-        //const { username, password } = req.body;
         // Validate inputs
         if (!username || !password) {
             return res
@@ -42,10 +40,7 @@ router.post("/register", async(req, res) => {
 // Login Route
 router.post("/login", async(req, res) => {
     try {
-        //const { username, password } = req.body;
-        const user = await AdminUser.findOne({ username });
-        console.log("🔐 Attempting login with:", username, password);
-        console.log("✅ Expected:", process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
+         const user = await AdminUser.findOne({ username });
         if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);
