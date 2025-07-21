@@ -42,6 +42,8 @@ router.post("/login", async(req, res) => {
     try {
         const { username, password } = req.body;
         const user = await AdminUser.findOne({ username });
+        console.log("🔐 Attempting login with:", username, password);
+        console.log("✅ Expected:", process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
         if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);
