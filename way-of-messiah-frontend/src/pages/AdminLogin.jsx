@@ -14,7 +14,7 @@ const AdminLogin = () => {
 
     try {
       const BASE_URL = import.meta.env.VITE_API_URL;
-      const res = await axios.post(`${BASE_URL}/auth/login`, {
+      const res = await axios.post(`${BASE_URL}/api/auth/login`, {
         username,
         password,
       });
