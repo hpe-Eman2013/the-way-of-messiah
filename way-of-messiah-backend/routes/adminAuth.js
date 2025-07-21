@@ -38,7 +38,7 @@ router.post("/register", async(req, res) => {
 });
 
 // Login Route
-router.post("/login", async(req, res) => {
+/* router.post("/login", async(req, res) => {
     try {
         const { username, password } = req.body;
         const user = await AdminUser.findOne({ username });
@@ -61,6 +61,29 @@ router.post("/login", async(req, res) => {
 //test route
 router.get("/test", (req, res) => {
   res.send("Auth router is working!");
+}); */
+router.post("/login", (req, res) => {
+  console.log("🔐 Login route hit");
+
+  // Hardcoded test credentials
+  const expectedUsername = "YahmanServantus25";
+  const expectedPassword = "The2ndExodusIsSoon!";
+
+  const { username, password } = req.body;
+
+  console.log("Received:");
+  console.log("  username:", username);
+  console.log("  password:", password);
+
+  if (username === expectedUsername && password === expectedPassword) {
+    console.log("✅ Login successful");
+    const token = jwt.sign({ username }, "testsecretkey", { expiresIn: "1h" });
+    return res.status(200).json({ token });
+  }
+
+  console.log("❌ Login failed");
+  return res.status(401).json({ error: "Invalid login credentials." });
 });
+
 
 module.exports = router;
