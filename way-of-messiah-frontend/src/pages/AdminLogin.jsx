@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const AdminLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (token) {
+      navigate("/admin/dashboard");
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,10 +28,15 @@ const AdminLogin = () => {
         username,
         password,
       });
+
       localStorage.setItem("adminToken", res.data.token);
-      window.location.href = "/admin/dashboard"; // or wherever your dashboard lives
+      navigate("/admin/dashboard");
     } catch (err) {
-      setError("Invalid credentials");
+      if (err.response?.status === 401) {
+        setError("Invalid username or password.");
+      } else {
+        setError("Server error. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -38,8 +53,7 @@ const AdminLogin = () => {
           onChange={(e) => setUsername(e.target.value)}
           required
         />
-        <br />
-        <br />
+        <br /><br />
         <input
           type="password"
           placeholder="Password"
@@ -47,8 +61,7 @@ const AdminLogin = () => {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <br />
-        <br />
+        <br /><br />
         <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
