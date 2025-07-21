@@ -14,11 +14,12 @@ const JWT_SECRET = process.env.JWT_SECRET;
 router.post("/login", async (req, res) => {
     const { username, password } = req.body;
 
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    if (username.trim() === process.env.ADMIN_USERNAME.trim() && 
+        password.trim() === process.env.ADMIN_PASSWORD.trim()) {
         console.log("🔐 Attempting login with:", username, password);
         console.log("✅ Expected:", ADMIN_USERNAME, ADMIN_PASSWORD);
-        const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: "1h" });
-        console.log("🔐 Signing token with:", JWT_SECRET);
+        const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        console.log("🔐 Signing token with:", process.env.JWT_SECRET);
         return res.status(200).json({ token });
     }
 
