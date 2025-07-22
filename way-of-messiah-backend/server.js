@@ -1,5 +1,4 @@
 // server.js
-const dotenv = require("dotenv");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -10,8 +9,6 @@ const fs = require("fs");
 const testimoniesRoute = require("./routes/testimonies");
 const adminRouter = require("./routes/admin");
 const Testimony = require("./models/Testimony");
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
