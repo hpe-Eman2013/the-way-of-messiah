@@ -14,7 +14,7 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchTestimonies = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/admin/testimonies`, {
+        const res = await axios.get(`${BASE_URL}/api/admin/testimonies`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
