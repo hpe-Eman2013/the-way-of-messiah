@@ -1,3 +1,4 @@
+require("dotenv").config(); // ✅ Load .env variables early
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET;
