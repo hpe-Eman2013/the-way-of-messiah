@@ -65,6 +65,17 @@ const AdminLogin = () => {
         <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
+        <br /><br />
+        <button
+          onClick={() => {
+            localStorage.removeItem("adminToken");
+            window.location.href = "/admin-login";
+          }}
+          className="bg-red-600 text-white px-3 py-1 rounded"
+        >
+          Logout
+        </button>
+
       </form>
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
