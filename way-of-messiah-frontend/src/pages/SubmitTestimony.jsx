@@ -16,7 +16,11 @@ export default function SubmitTestimony() {
     const data = new FormData();
     data.append("name", name);
     data.append("message", message);
-    if (image) data.append("image", image);
+    if (imageSource === "upload" && file) {
+      formData.append("image", file);
+    } else if (imageSource === "url") {
+      formData.append("imageUrl", imageUrl);
+    }
 
     try {
       const BASE_URL = import.meta.env.VITE_API_URL;
@@ -60,10 +64,40 @@ export default function SubmitTestimony() {
           onChange={(e) => setMessage(e.target.value)}
           className="w-full border p-2"
         ></textarea>
+         <label>Image Source:</label><br />
+      <label>
+        <input
+          type="radio"
+          value="upload"
+          checked={imageSource === "upload"}
+          onChange={() => setImageSource("upload")}
+        /> Upload from device
+      </label>
+      <label>
+        <input
+          type="radio"
+          value="url"
+          checked={imageSource === "url"}
+          onChange={() => setImageSource("url")}
+        /> Link from URL
+      </label>
+
+      {imageSource === "upload" && (
         <input
           type="file"
-          onChange={(e) => setImage(e.target.files[0])}
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files[0])}
         />
+      )}
+
+      {imageSource === "url" && (
+        <input
+          type="text"
+          placeholder="https://example.com/image.jpg"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+        />
+      )}
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
           Submit
         </button>
