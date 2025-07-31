@@ -19,13 +19,12 @@ const testimonyRoutes = require("./routes/testimonyRoutes");
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
+app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
 app.use("/api/testimonies", testimoniesRoute);
 app.use("/", testimonyRoutes); // allows /testimonies
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", adminAuthRoutes);
 app.use("/admin", adminRoutes);
-app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
