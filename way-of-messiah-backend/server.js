@@ -14,12 +14,14 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 const adminAuthRoutes = require("./routes/adminAuth");
 const adminRoutes = require("./routes/adminRoutes");
+const testimonyRoutes = require("./routes/testimonyRoutes");
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 app.use("/api/testimonies", testimoniesRoute);
+app.use("/", testimonyRoutes); // allows /testimonies
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", adminAuthRoutes);
 app.use("/admin", adminRoutes);
