@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Header from "../components/Header";
+import { CheckCircle, XCircle, Trash2 } from "lucide-react";
 
 export default function AdminPage() {
   const [testimonies, setTestimonies] = useState([]);
@@ -20,7 +21,6 @@ export default function AdminPage() {
         });
         setTestimonies(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
-        console.error("Error loading testimonies:", err);
         setError("Failed to load testimonies.");
       } finally {
         setLoading(false);
@@ -28,40 +28,6 @@ export default function AdminPage() {
     };
     fetchTestimonies();
   }, []);
-
-  const handleApproval = async (id, approved) => {
-  const endpoint = approved
-    ? `${BASE_URL}/admin/testimonies/${id}/approve`
-    : `${BASE_URL}/admin/testimonies/${id}/disapprove`;
-
-  try {
-      await axios.patch(endpoint, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSuccess(`Testimony ${approved ? "approved" : "unapproved"}.`);
-    setTimeout(() => setSuccess(""), 3000);
-    setTestimonies((prev) =>
-      prev.map((t) => (t._id === id ? { ...t, approved } : t))
-    );
-  } catch {
-      alert("Error updating status.");
-  }
-};
-
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this testimony?")) return;
-    try {
-      await axios.delete(`${BASE_URL}/admin/testimonies/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setTestimonies((prev) => prev.filter((t) => t._id !== id));
-      setSuccess("Testimony deleted.");
-      setTimeout(() => setSuccess(""), 3000);
-    } catch {
-      alert("Error deleting testimony.");
-    }
-  };
 
   const toggleSelection = (id) => {
     setSelectedIds((prev) =>
@@ -118,39 +84,38 @@ export default function AdminPage() {
         {error && <p className="text-center text-red-500">{error}</p>}
         {success && <p className="text-center text-green-600 font-medium">{success}</p>}
 
-        <div className="flex gap-2 mb-4">
-          <button onClick={() => handleBulkAction("approve")} className="bg-green-600 text-white px-3 py-1 rounded">Approve Selected</button>
-          <button onClick={() => handleBulkAction("disapprove")} className="bg-yellow-600 text-white px-3 py-1 rounded">Disapprove Selected</button>
-          <button onClick={() => handleBulkAction("delete")} className="bg-red-600 text-white px-3 py-1 rounded">Delete Selected</button>
+        <div className="mb-4 flex items-center gap-4">
+          <input type="checkbox" checked={selectedIds.length === testimonies.length} onChange={toggleSelectAll} />
+          <span className="mr-4">Select All</span>
+          <CheckCircle
+            className="cursor-pointer text-green-600"
+            size={24}
+            onClick={() => handleBulkAction("approve")}
+            title="Approve Selected"
+          />
+          <XCircle
+            className="cursor-pointer text-yellow-600"
+            size={24}
+            onClick={() => handleBulkAction("disapprove")}
+            title="Disapprove Selected"
+          />
+          <Trash2
+            className="cursor-pointer text-red-600"
+            size={24}
+            onClick={() => handleBulkAction("delete")}
+            title="Delete Selected"
+          />
         </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center mb-2">
-            <input type="checkbox" onChange={toggleSelectAll} checked={selectedIds.length === testimonies.length} className="mr-2" />
-            <span>Select All</span>
-          </div>
-
-          {testimonies.map(({ _id, name, message, imageUrl, createdAt, approved }) => (
-            <div key={_id} className="bg-white p-6 rounded-lg shadow border border-gray-200">
-                <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" checked={selectedIds.includes(_id)} onChange={() => toggleSelection(_id)} />
-                  <h2 className="text-xl font-semibold text-gray-800">{name || "Anonymous"}</h2>
-                </div>
-                {createdAt && <span className="text-sm text-gray-500">{new Date(createdAt).toLocaleDateString()}</span>}
-                </div>
-                <p className="text-gray-700 whitespace-pre-line">{message}</p>
-              {imageUrl && <img src={imageUrl} alt={`${name}'s testimony`} className="mt-4 max-h-60 object-contain rounded border" />}
-                <div className="mt-4 flex gap-2">
-                  <button
-                    onClick={() => handleApproval(_id, !approved)}
-                  className={`px-3 py-1 rounded text-white ${approved ? "bg-yellow-600" : "bg-green-600"}`}
-                >{approved ? "Unapprove" : "Approve"}</button>
-                  <button
-                    onClick={() => handleDelete(_id)}
-                    className="px-3 py-1 bg-red-600 text-white rounded"
-                >Delete</button>
-              </div>
+        <div className="space-y-4">
+          {testimonies.map(({ _id, name }) => (
+            <div key={_id} className="flex items-center gap-4 border p-3 rounded bg-white">
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(_id)}
+                onChange={() => toggleSelection(_id)}
+              />
+              <span className="font-medium">{name}</span>
             </div>
           ))}
         </div>
