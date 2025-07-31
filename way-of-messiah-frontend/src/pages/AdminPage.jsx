@@ -38,24 +38,31 @@ export default function AdminPage() {
   }, []);
 
   const handleApproval = async (id, approved) => {
-    try {
-      await axios.patch(
-        `${BASE_URL}/admin/testimonies/${id}/approve`,
-        { approved },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      console.log("Sending PATCH to:", endpoint);
-      setSuccess(`Testimony has been ${approved ? "approved" : "unapproved"}.`);
-      setTimeout(() => setSuccess(""), 3000);
-      setTestimonies((prev) =>
-        prev.map((t) => (t._id === id ? { ...t, approved } : t))
-      );
-    } catch {
-      alert("Error updating approval status.");
-    }
-  };
+  const endpoint = approved
+    ? `${BASE_URL}/admin/testimonies/${id}/approve`
+    : `${BASE_URL}/admin/testimonies/${id}/disapprove`;
+
+  try {
+    console.log("Sending PATCH to:", endpoint);
+
+    await axios.patch(
+      endpoint,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    setSuccess(`Testimony has been ${approved ? "approved" : "unapproved"}.`);
+    setTimeout(() => setSuccess(""), 3000);
+    setTestimonies((prev) =>
+      prev.map((t) => (t._id === id ? { ...t, approved } : t))
+    );
+  } catch {
+    alert("Error updating approval status.");
+  }
+};
+
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this testimony?")) return;
