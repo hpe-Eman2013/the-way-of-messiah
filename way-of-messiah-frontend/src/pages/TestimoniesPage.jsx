@@ -53,7 +53,8 @@ const TestimoniesPage = () => {
                   src={fullImageUrl}
                   alt="Testimony image"
                   className="mt-4 w-24 h-24 object-cover rounded border"
-                />
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer" />
               )}
             </div>
           );
