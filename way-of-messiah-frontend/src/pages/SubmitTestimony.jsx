@@ -16,7 +16,7 @@ const SubmitTestimony = () => {
     if (image) data.append("image", image);
 
     try {
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const BASE_URL = import.meta.env.VITE_API_URL;
       console.log("Submitting to:", BASE_URL); // Log which backend we're submitting to
       const res = await fetch(`${BASE_URL}/api/submit-testimony`, {
         method: "POST",
