@@ -25,6 +25,7 @@ app.use("/", testimonyRoutes); // allows /testimonies
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", adminAuthRoutes);
 app.use("/admin", adminRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
@@ -35,7 +36,7 @@ if (!fs.existsSync(uploadDir)) {
 // Multer config for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/"); // ensure this folder exists
+    cb(null, "public/uploads/"); // ensure this folder exists
     },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + file.originalname;
