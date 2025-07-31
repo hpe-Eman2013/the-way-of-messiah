@@ -19,8 +19,16 @@ export default function AdminPage() {
             Authorization: `Bearer ${token}`,
           },
         });
+        console.log("Response from server:", res.data);
+
+        if (Array.isArray(res.data)) {
         setTestimonies(res.data);
+        } else {
+          console.error("Unexpected testimony format:", res.data);
+          setTestimonies([]);
+        }
       } catch (err) {
+        console.error("Error loading testimonies:", err);
         setError("Failed to load testimonies.");
       } finally {
         setLoading(false);
@@ -82,12 +90,13 @@ export default function AdminPage() {
         {loading && <p className="text-center">Loading...</p>}
         {error && <p className="text-center text-red-500">{error}</p>}
         {success && <p className="text-center text-green-600 font-medium">{success}</p>}
-        {testimonies.length === 0 && !loading && (
+        {!loading && Array.isArray(testimonies) && testimonies.length === 0 && (
           <p className="text-center text-gray-600">No testimonies to display.</p>
         )}
 
         <div className="space-y-6">
-          {testimonies.map(
+          {Array.isArray(testimonies) ? (
+            testimonies.map(
             ({ _id, name, message, imageUrl, createdAt, approved }) => (
               <div
                 key={_id}
@@ -129,6 +138,9 @@ export default function AdminPage() {
                 </div>
               </div>
             )
+            )
+          ) : (
+            <p className="text-center text-gray-600">Unable to load testimonies.</p>
           )}
         </div>
       </div>
