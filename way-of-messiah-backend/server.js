@@ -19,6 +19,7 @@ const testimonyRoutes = require("./routes/testimonyRoutes");
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static("public"));
 app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
 app.use("/api/testimonies", testimoniesRoute);
 app.use("/", testimonyRoutes); // allows /testimonies
