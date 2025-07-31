@@ -50,11 +50,14 @@ const TestimoniesPage = () => {
               <p className="text-gray-800 whitespace-pre-line">{message}</p>
               {imageUrl && (
                 <img
-                  src={fullImageUrl}
-                  alt="Testimony image"
-                  className="mt-4 w-24 h-24 object-cover rounded border"
-                  crossOrigin="anonymous"
-                  referrerPolicy="no-referrer" />
+                  src={
+                    imageUrl.startsWith("http")
+                      ? imageUrl
+                      : `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}${imageUrl}`
+                  }
+                  alt="Testimony"
+                  className="w-24 h-24 object-cover rounded border"
+                />
               )}
             </div>
           );
