@@ -13,6 +13,7 @@ const Testimony = require("./models/Testimony");
 const app = express();
 const PORT = process.env.PORT || 10000;
 const adminAuthRoutes = require("./routes/adminAuth");
+const adminRoutes = require("./routes/adminRoutes");
 
 // Middleware
 app.use(cors());
@@ -21,6 +22,7 @@ app.use(express.static("public"));
 app.use("/api/testimonies", testimoniesRoute);
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", adminAuthRoutes);
+app.use("/admin", adminRoutes);
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
