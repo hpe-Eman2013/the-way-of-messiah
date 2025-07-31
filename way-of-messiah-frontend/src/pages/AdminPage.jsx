@@ -46,6 +46,7 @@ export default function AdminPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      console.log("Sending PATCH to:", endpoint);
       setSuccess(`Testimony has been ${approved ? "approved" : "unapproved"}.`);
       setTimeout(() => setSuccess(""), 3000);
       setTestimonies((prev) =>
