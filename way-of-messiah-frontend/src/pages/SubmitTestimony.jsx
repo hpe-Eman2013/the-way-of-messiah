@@ -73,6 +73,9 @@ export default function SubmitTestimony() {
             onChange={() => setImageSource("upload")}
           /> Upload from device
         </label>
+        
+      </div>
+      <div>
         <label>
           <input
             type="radio"
@@ -81,8 +84,6 @@ export default function SubmitTestimony() {
             onChange={() => setImageSource("url")}
           /> Link from URL
         </label>
-      </div>
-
       {imageSource === "upload" && (
         <input
           type="file"
@@ -99,7 +100,7 @@ export default function SubmitTestimony() {
           onChange={(e) => setImageUrl(e.target.value)}
         />
       )}
-
+      </div>
       <button type="submit">Submit</button>
     </form>
   );
