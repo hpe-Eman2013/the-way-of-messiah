@@ -3,114 +3,66 @@ import axios from "axios";
 import "../assets/css/SubmitTestimony.css";
 import { Link } from "react-router-dom";
 
-export default function SubmitTestimony() {
+const SubmitTestimony = () => {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
-  const [imageSource, setImageSource] = useState("upload");
-  const [file, setFile] = useState(null);
-  const [imageUrl, setImageUrl] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [statusType, setStatusType] = useState(""); // "success" or "error"
-
+  const [image, setImage] = useState(null);
+  const [status, setStatus] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("message", message);
+    setStatus("");
 
-    if (imageSource === "upload" && file) {
-      formData.append("image", file);
-    } else if (imageSource === "url") {
-      formData.append("imageUrl", imageUrl);
-    }
+    const data = new FormData();
+    data.append("name", name);
+    data.append("message", message);
+    if (image) data.append("image", image);
 
     try {
-      const BASE_URL = import.meta.env.VITE_API_URL;
-      await axios.post(`${BASE_URL}/api/submit-testimony`, formData);
-      setStatusMessage("Testimony submitted successfully!");
-      setStatusType("success");
-      // Optional: reset form
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const res = await fetch(`${BASE_URL}/api/submit-testimony`, {
+        method: "POST",
+        body: data,
+      });
+
+      if (res.ok) {
+        setStatus("Testimony submitted successfully.");
       setName("");
       setMessage("");
-      setFile(null);
-      setImageUrl("");
-    } catch (err) {
-      setStatusMessage("Submission failed. Please try again.");
-      setStatusType("error");
+        setImage(null);
+      } else {
+        const err = await res.json();
+        setStatus(err.error || "Failed to submit testimony.");
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      setStatus("Submission failed. Please try again.");
     }
   };
 
   return (
-    <form className="testimony-form" onSubmit={handleSubmit}>
-      <h2>SUBMIT YOUR TESTIMONY</h2>
-
-      <label htmlFor="name">Full Name:</label>
+    <form onSubmit={handleSubmit} encType="multipart/form-data">
       <input
-        id="name"
         type="text"
+        placeholder="Your name (optional)"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        required
-      />
-
-      <label htmlFor="message">Testimony:</label>
+      /><br /><br />
       <textarea
-        id="message"
-        rows="4"
+        placeholder="Your testimony"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         required
-      />
-
-      <div className="radio-group">
-        <label>
-          <input
-            type="radio"
-            value="upload"
-            checked={imageSource === "upload"}
-            onChange={() => setImageSource("upload")}
-          /> Upload from device
-        </label>
-        {imageSource === "upload" && (
+      /><br /><br />
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-        )}
-      </div>
-
-      <div className="radio-group">
-        <label>
-          <input
-            type="radio"
-            value="url"
-            checked={imageSource === "url"}
-            onChange={() => setImageSource("url")}
-          /> Link from URL
-        </label>
-        {imageSource === "url" && (
-          <input
-            type="text"
-            placeholder="https://example.com/photo.jpg"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-          />
-        )}
-      </div>
-
-        {statusMessage && (
-          <div className={`status-message ${statusType}`}>
-            {statusMessage}
-          </div>
-        )}
-
+        onChange={(e) => setImage(e.target.files[0])}
+      /><br /><br />
       <button type="submit">Submit</button>
-
-      <div className="navigation-links">
-        <Link to="/">← Back to Home</Link> | <Link to="/admin">Go to Dashboard</Link>
-      </div>
+      {status && <p>{status}</p>}
     </form>
   );
-}
+};
+
+export default SubmitTestimony;
