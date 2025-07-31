@@ -34,11 +34,10 @@ const TestimoniesPage = () => {
       <div className="space-y-6">
         {testimonies.map(({ _id, name, message, imageUrl, createdAt }) => {
           const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
-          console.log("BASE:", BASE);
-          console.log("imageUrl:", imageUrl);
           const fullImageUrl = imageUrl?.startsWith("http")
             ? imageUrl
             : `${BASE}${imageUrl}`;
+          console.log("imageUrl:", imageUrl);
           console.log("fullImageUrl:", fullImageUrl);
           return (
             <div key={_id} className="bg-white shadow p-4 rounded border">
