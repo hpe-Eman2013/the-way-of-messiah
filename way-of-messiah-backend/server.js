@@ -75,6 +75,8 @@ app.patch("/api/testimonies/:id/approve", async(req, res) => {
 
 // POST testimony (with optional image upload or URL)
 app.post("/api/submit-testimony", upload.single("image"), async(req, res) => {
+    console.log("📥 BODY:", req.body);
+    console.log("🖼️ FILE:", req.file);
     const { name, message, imageUrl: submittedUrl } = req.body;
 
     if (!message) {
