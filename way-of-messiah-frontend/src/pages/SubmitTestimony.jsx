@@ -1,6 +1,9 @@
-import { useState } from "react";
+// SubmitTestimony.jsx (with Home link added)
 
-const SubmitTestimony = () => {
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+
+export default function SubmitTestimony() {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [image, setImage] = useState(null);
@@ -17,7 +20,6 @@ const SubmitTestimony = () => {
 
     try {
       const BASE_URL = import.meta.env.VITE_API_URL;
-      console.log("Submitting to:", BASE_URL); // Log which backend we're submitting to
       const res = await fetch(`${BASE_URL}/api/submit-testimony`, {
         method: "POST",
         body: data,
@@ -39,24 +41,34 @@ const SubmitTestimony = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <div className="min-h-screen bg-white text-black p-6">
+      <div className="flex justify-between mb-6">
+        <h1 className="text-2xl font-bold">Submit Testimony</h1>
+        <Link to="/" className="text-blue-600 underline">Home</Link>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
-        placeholder="Your name (optional)"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      /><br /><br />
+          placeholder="Your name (optional)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full border p-2"
+        />
         <textarea
-        placeholder="Your testimony"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-          required
-      /><br /><br />
-      <input type="file" onChange={(e) => setImage(e.target.files[0])} /><br /><br />
-      <button type="submit">Submit</button>
-      {status && <p>{status}</p>}
+          placeholder="Your testimony"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          className="w-full border p-2"
+        ></textarea>
+        <input
+          type="file"
+          onChange={(e) => setImage(e.target.files[0])}
+        />
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+          Submit
+        </button>
       </form>
+      {status && <p className="mt-4 text-green-600">{status}</p>}
+    </div>
   );
-};
-
-export default SubmitTestimony;
+}
