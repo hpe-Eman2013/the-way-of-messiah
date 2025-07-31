@@ -34,14 +34,15 @@ if (!fs.existsSync(uploadDir)) {
 
 // Multer config for file uploads
 const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, uploadDir);
+  destination: function (req, file, cb) {
+    cb(null, "uploads/"); // ensure this folder exists
     },
-    filename: function(req, file, cb) {
-        const uniqueName = Date.now() + "-" + file.originalname.replace(/\s+/g, "-");
-        cb(null, uniqueName);
-    },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + file.originalname;
+    cb(null, uniqueSuffix);
+  }
 });
+
 const upload = multer({ storage });
 
 // Routes
@@ -71,20 +72,27 @@ app.patch("/api/testimonies/:id/approve", async(req, res) => {
     }
 });
 
-// POST testimony (with optional image upload)
+// POST testimony (with optional image upload or URL)
 app.post("/api/submit-testimony", upload.single("image"), async(req, res) => {
-    const { name, message } = req.body;
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
+    const { name, message, imageUrl: submittedUrl } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: "Message is required." });
+    }
+
+    let finalImageUrl = "";
+
+    if (req.file) {
+        finalImageUrl = `/uploads/${req.file.filename}`;
+    } else if (submittedUrl) {
+        finalImageUrl = submittedUrl;
     }
 
     try {
         const testimony = new Testimony({
             name,
             message,
-            imageUrl,
+            imageUrl: finalImageUrl,
             approved: false,
             createdAt: new Date(),
         });
