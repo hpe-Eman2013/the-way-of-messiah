@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
-import "../assets/css/SubmitTestimony.css"; // Make sure this CSS file exists
+import "../assets/css/SubmitTestimony.css";
+import { Link } from "react-router-dom";
 
 export default function SubmitTestimony() {
   const [name, setName] = useState("");
@@ -26,7 +27,7 @@ export default function SubmitTestimony() {
 
     try {
       const BASE_URL = import.meta.env.VITE_API_URL;
-      await axios.post(`${BASE_URL}/submit`, formData);
+      await axios.post(`${BASE_URL}/api/submit-testimony`, formData);
       setStatusMessage("Testimony submitted successfully!");
       setStatusType("success");
       // Optional: reset form
@@ -69,8 +70,7 @@ export default function SubmitTestimony() {
             value="upload"
             checked={imageSource === "upload"}
             onChange={() => setImageSource("upload")}
-          />
-          Upload from device
+          /> Upload from device
         </label>
         {imageSource === "upload" && (
           <input
@@ -88,8 +88,7 @@ export default function SubmitTestimony() {
             value="url"
             checked={imageSource === "url"}
             onChange={() => setImageSource("url")}
-          />
-          Link from URL
+          /> Link from URL
         </label>
         {imageSource === "url" && (
           <input
@@ -100,12 +99,18 @@ export default function SubmitTestimony() {
           />
         )}
       </div>
+
         {statusMessage && (
           <div className={`status-message ${statusType}`}>
             {statusMessage}
           </div>
         )}
+
       <button type="submit">Submit</button>
+
+      <div className="navigation-links">
+        <Link to="/">← Back to Home</Link> | <Link to="/admin">Go to Dashboard</Link>
+      </div>
     </form>
   );
 }
