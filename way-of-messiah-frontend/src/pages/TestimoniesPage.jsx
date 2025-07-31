@@ -1,4 +1,5 @@
 // TestimoniesPage.jsx
+console.log("🧠 TestimoniesPage is rendering...");
 import { useState, useEffect } from "react";
 import axios from "axios";
 
