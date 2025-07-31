@@ -112,14 +112,25 @@ export default function AdminPage() {
         </div>
 
         <div className="space-y-4">
-          {testimonies.map(({ _id, name }) => (
-            <div key={_id} className="flex items-center gap-4 border p-3 rounded bg-white">
+          {testimonies.map(({ _id, name, message, imageUrl, createdAt }) => (
+            <div key={_id} className="border p-4 rounded bg-white">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
               <input
                 type="checkbox"
                 checked={selectedIds.includes(_id)}
                 onChange={() => toggleSelection(_id)}
               />
-              <span className="font-medium">{name}</span>
+                  <div>
+                    <h2 className="text-lg font-semibold">{name || "Anonymous"}</h2>
+                    {createdAt && <p className="text-sm text-gray-500">{new Date(createdAt).toLocaleDateString()}</p>}
+                  </div>
+                </div>
+              </div>
+              <p className="mt-2 text-gray-800 whitespace-pre-line">{message}</p>
+              {imageUrl && (
+                <img src={imageUrl} alt="testimony image" className="mt-3 rounded border max-h-60 object-contain" />
+              )}
             </div>
           ))}
         </div>
