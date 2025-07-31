@@ -52,9 +52,9 @@ const TestimoniesPage = () => {
               <p className="text-gray-800 whitespace-pre-line">{message}</p>
               {imageUrl && (
                 <img
-                  src={fullImageUrl}
-                  alt="Testimony image"
-                  className="mt-3 rounded border max-h-60 object-contain"
+                  src={imageUrl.startsWith("http") ? imageUrl : `${BASE_URL.replace(/\/$/, "")}${imageUrl}`}
+                  alt={`${name}'s testimony`}
+                  className="mt-4 max-h-60 object-contain rounded border"
                 />
               )}
             </div>
