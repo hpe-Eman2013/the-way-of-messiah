@@ -10,7 +10,7 @@ const TestimoniesPage = () => {
   useEffect(() => {
     const fetchTestimonies = async () => {
       try {
-        const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        const BASE_URL = import.meta.env.VITE_API_URL;
         const response = await axios.get(`${BASE_URL}/api/testimonies`);
         setTestimonies(response.data);
       } catch (err) {
@@ -32,7 +32,7 @@ const TestimoniesPage = () => {
       )}
       <div className="space-y-6">
         {testimonies.map(({ _id, name, message, imageUrl, createdAt }) => {
-          const BASE = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, "");
+          const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
           const fullImageUrl = imageUrl?.startsWith("http")
             ? imageUrl
             : `${BASE}${imageUrl}`;
@@ -50,13 +50,9 @@ const TestimoniesPage = () => {
               <p className="text-gray-800 whitespace-pre-line">{message}</p>
               {imageUrl && (
                 <img
-                  src={
-                    imageUrl.startsWith("http")
-                      ? imageUrl
-                      : `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}${imageUrl}`
-                  }
-                  alt="Testimony"
-                  className="w-24 h-24 object-cover rounded border"
+                  src={fullImageUrl}
+                  alt="Testimony image"
+                  className="mt-3 rounded border max-h-60 object-contain"
                 />
               )}
             </div>
