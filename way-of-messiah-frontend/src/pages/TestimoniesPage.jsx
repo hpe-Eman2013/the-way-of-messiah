@@ -52,10 +52,15 @@ const TestimoniesPage = () => {
               <p className="text-gray-800 whitespace-pre-line">{message}</p>
               {imageUrl && (
                 <img
-                  src={imageUrl.startsWith("http") ? imageUrl : `${BASE_URL.replace(/\/$/, "")}${imageUrl}`}
+                  src={
+                    imageUrl.startsWith("http")
+                      ? imageUrl
+                      : `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}${imageUrl}`
+                  }
                   alt={`${name}'s testimony`}
                   className="mt-4 max-h-60 object-contain rounded border"
                 />
+
               )}
             </div>
           );
