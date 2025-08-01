@@ -1,0 +1,8 @@
+/* EventsPage.css */
+body {
+  font-family: system-ui, sans-serif;
+}
+
+a {
+  transition: color 0.2s ease;
+}
