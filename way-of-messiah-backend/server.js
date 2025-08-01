@@ -26,6 +26,8 @@ app.use("/", testimonyRoutes); // allows /testimonies
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", adminAuthRoutes);
 app.use("/admin", adminRoutes);
+app.use("/api", require("./routes/testimonies"));
+
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
