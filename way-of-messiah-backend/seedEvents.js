@@ -4,11 +4,11 @@ const fs = require("fs");
 const path = require("path");
 const Event = require("./models/Event"); // adjust if path differs
 
-const MONGO_URI = process.env.MONGODB_URI;
+const MONGO = process.env.MONGODB_URI;
 
 async function seedEvents() {
   try {
-    await mongoose.connect(MONGODB_URI, {
+    await mongoose.connect(MONGO, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
