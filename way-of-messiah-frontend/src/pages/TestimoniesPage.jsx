@@ -23,18 +23,36 @@ const TestimoniesPage = () => {
     fetchTestimonies();
   }, []);
   const handleLike = async (id) => {
-    try {
-      const BASE_URL = import.meta.env.VITE_API_URL;
-      await axios.post(`${BASE_URL}/api/testimonies/${id}/like`);
-      setTestimonies((prev) =>
-        prev.map((t) =>
-          t._id === id ? { ...t, likes: (t.likes || 0) + 1 } : t
-        )
-      );
-    } catch (err) {
-      console.error("Error liking testimony:", err);
-    }
-  };
+  // Get list of liked testimonies from localStorage
+  const liked = JSON.parse(localStorage.getItem("likedTestimonies") || "[]");
+
+  // Prevent multiple likes
+  if (liked.includes(id)) {
+    alert("You've already liked this testimony.");
+    return;
+  }
+
+  try {
+    const BASE_URL = import.meta.env.VITE_API_URL;
+    await axios.post(`${BASE_URL}/api/testimonies/${id}/like`);
+
+    // Update local UI
+    setTestimonies((prev) =>
+      prev.map((t) =>
+        t._id === id ? { ...t, likes: (t.likes || 0) + 1 } : t
+      )
+    );
+
+    // Add this ID to localStorage
+    localStorage.setItem(
+      "likedTestimonies",
+      JSON.stringify([...liked, id])
+    );
+  } catch (err) {
+    console.error("Error liking testimony:", err);
+  }
+};
+
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
