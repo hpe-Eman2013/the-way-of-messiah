@@ -32,7 +32,20 @@ router.get("/protected", verifyToken, (req, res) => {
 router.get("/admin/ping", verifyToken, (req, res) => {
     res.json({ message: `Access granted for ${req.user.username}` });
 });
+// POST /testimonies/:id/like
+router.post("/testimonies/:id/like", async (req, res) => {
+  try {
+    const testimony = await Testimony.findById(req.params.id);
+    if (!testimony) return res.status(404).json({ error: "Not found" });
 
+    testimony.likes += 1;
+    await testimony.save();
+
+    res.json({ message: "Liked!", likes: testimony.likes });
+  } catch (err) {
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
 
 // PATCH /testimonies/:id/approve
 router.patch("/:id/approve", async(req, res) => {
@@ -72,6 +85,25 @@ router.delete("/:id", async(req, res) => {
     } catch (err) {
         res.status(500).json({ error: "Failed to delete testimony." });
     }
+});
+// Increment likes for a testimony
+router.post("/testimonies/:id/like", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const testimony = await Testimony.findById(id);
+    if (!testimony) {
+      return res.status(404).json({ message: "Testimony not found" });
+    }
+
+    testimony.likes = (testimony.likes || 0) + 1;
+    await testimony.save();
+
+    res.status(200).json({ message: "Like added", likes: testimony.likes });
+  } catch (err) {
+    console.error("Error updating likes:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 module.exports = router;

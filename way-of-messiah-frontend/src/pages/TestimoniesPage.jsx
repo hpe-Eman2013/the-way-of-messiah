@@ -1,7 +1,7 @@
 // TestimoniesPage.jsx
-console.log("🧠 TestimoniesPage is rendering...");
 import { useState, useEffect } from "react";
 import axios from "axios";
+import "../assets/css/TestimoniesPage.css";
 
 const TestimoniesPage = () => {
   const [testimonies, setTestimonies] = useState([]);
@@ -22,6 +22,19 @@ const TestimoniesPage = () => {
     };
     fetchTestimonies();
   }, []);
+  const handleLike = async (id) => {
+    try {
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      await axios.post(`${BASE_URL}/api/testimonies/${id}/like`);
+      setTestimonies((prev) =>
+        prev.map((t) =>
+          t._id === id ? { ...t, likes: (t.likes || 0) + 1 } : t
+        )
+      );
+    } catch (err) {
+      console.error("Error liking testimony:", err);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
@@ -32,7 +45,7 @@ const TestimoniesPage = () => {
         <p className="text-gray-500">No testimonies to display.</p>
       )}
       <div className="space-y-6">
-        {testimonies.map(({ _id, name, message, imageUrl, createdAt }) => {
+        {testimonies.map(({ _id, name, message, imageUrl, createdAt, likes }) => {
           const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
           const fullImageUrl = imageUrl?.startsWith("http")
             ? imageUrl
@@ -60,8 +73,15 @@ const TestimoniesPage = () => {
                   alt={`${name}'s testimony`}
                   className="mt-4 max-h-60 object-contain rounded border"
                 />
-
               )}
+              <div className="like-container">
+                <div onClick={() => handleLike(_id)} className="like-button">
+                  ❤️ Like
+                </div>
+                <span className="like-count">
+                  {likes || 0} like{(likes || 0) !== 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
           );
         })}

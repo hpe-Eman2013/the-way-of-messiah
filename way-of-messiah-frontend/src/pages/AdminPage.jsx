@@ -65,6 +65,10 @@ export default function AdminPage() {
       alert("Bulk action failed.");
     }
   };
+  const buildImageUrl = (url) => {
+    const BASE = import.meta.env.VITE_API_URL || "";
+    return url.startsWith("http") ? url : `${BASE.replace(/\/$/, "")}${url}`;
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 text-black">
@@ -129,7 +133,7 @@ export default function AdminPage() {
               </div>
               <p className="mt-2 text-gray-800 whitespace-pre-line">{message}</p>
               {imageUrl && (
-                <img src={imageUrl} alt="testimony image" className="mt-3 rounded border max-h-60 object-contain" />
+                <img src={buildImageUrl(imageUrl)} alt="testimony image" className="mt-3 rounded border max-h-60 object-contain" />
               )}
             </div>
           ))}

@@ -1,0 +1,25 @@
+.like-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* spacing between Like and like count */
+  margin-top: 1rem;
+}
+
+.like-button {
+  cursor: pointer;
+  color: #dc2626; /* red-600 */
+  border: 1px solid #fca5a5; /* red-300 */
+  padding: 4px 12px;
+  border-radius: 6px;
+  background-color: transparent;
+  transition: color 0.2s ease;
+}
+
+.like-button:hover {
+  color: #991b1b; /* red-800 */
+}
+
+.like-count {
+  font-size: 0.875rem; /* text-sm */
+  color: #4b5563;       /* gray-600 */
+}
