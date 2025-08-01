@@ -8,6 +8,7 @@ const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -24,6 +25,19 @@ const EventsPage = () => {
     fetchEvents();
   }, []);
 
+  const filteredEvents = events.filter((event) => {
+    if (filter === "feast")
+      return (
+        event.name.toLowerCase().includes("feast") ||
+        event.name.toLowerCase().includes("passover") ||
+        event.name.toLowerCase().includes("atonement") ||
+        event.name.toLowerCase().includes("tabernacles") ||
+        event.name.toLowerCase().includes("shavuot")
+      );
+    if (filter === "sabbath") return event.name.toLowerCase() === "sabbath";
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-gray-100 text-black">
       <Header />
@@ -32,12 +46,52 @@ const EventsPage = () => {
           Upcoming Events & Gatherings
         </h1>
 
+        <div className="flex justify-center gap-4 mb-6">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-4 py-2 rounded ${
+              filter === "all"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-800"
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter("feast")}
+            className={`px-4 py-2 rounded ${
+              filter === "feast"
+                ? "bg-green-600 text-white"
+                : "bg-gray-200 text-gray-800"
+            }`}
+          >
+            Feasts
+          </button>
+          <button
+            onClick={() => setFilter("sabbath")}
+            className={`px-4 py-2 rounded ${
+              filter === "sabbath"
+                ? "bg-purple-600 text-white"
+                : "bg-gray-200 text-gray-800"
+            }`}
+          >
+            Sabbaths
+          </button>
+        </div>
+
         {loading && <p>Loading events...</p>}
         {error && <p className="text-red-500">{error}</p>}
 
         <div className="space-y-6">
-          {events.map((event) => (
-            <div key={event._id} className="bg-white shadow-md rounded p-4 border border-gray-200">
+          {filteredEvents.map((event) => (
+            <div
+              key={event._id}
+              className={`shadow-md rounded p-4 border ${
+                event.name.toLowerCase() === "sabbath"
+                  ? "bg-purple-100 border-purple-300"
+                  : "bg-green-100 border-green-300"
+              }`}
+            >
               <h2 className="text-xl font-semibold">{event.name}</h2>
               <p className="text-gray-600">
                 📅 {dayjs(event.date).format("MMMM D, YYYY")} @ {event.time}
