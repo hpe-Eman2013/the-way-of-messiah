@@ -86,12 +86,15 @@ const EventsPage = () => {
           {filteredEvents.map((event) => (
             <div
               key={event._id}
-              className={`shadow-md rounded p-4 border ${
+              className={`event-card ${
                 event.name.toLowerCase() === "sabbath"
-                  ? "bg-purple-100 border-purple-300"
-                  : "bg-green-100 border-green-300"
+                  ? "sabbath"
+                  : /feast|passover|atonement|tabernacles|shavuot/i.test(event.name)
+                  ? "feast"
+                  : "general"
               }`}
             >
+
               <h2 className="text-xl font-semibold">{event.name}</h2>
               <p className="text-gray-600">
                 📅 {dayjs(event.date).format("MMMM D, YYYY")} @ {event.time}

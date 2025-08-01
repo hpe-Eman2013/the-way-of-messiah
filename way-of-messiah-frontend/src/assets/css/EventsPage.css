@@ -6,3 +6,24 @@ body {
 a {
   transition: color 0.2s ease;
 }
+.event-card {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-width: 1px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.event-card.sabbath {
+  background-color: #f3e8ff; /* purple-100 */
+  border-color: #d8b4fe;     /* purple-300 */
+}
+
+.event-card.feast {
+  background-color: #d1fae5; /* green-100 */
+  border-color: #6ee7b7;     /* green-300 */
+}
+
+.event-card.general {
+  background-color: #ffffff;
+  border-color: #e5e7eb;     /* gray-200 */
+}
