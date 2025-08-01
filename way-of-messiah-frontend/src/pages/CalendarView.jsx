@@ -6,6 +6,8 @@ import "../assets/css/CalendarView.css";
 
 dayjs.extend(utc);
 
+const SPRING_EQUINOX = dayjs("2025-03-20");
+
 const CalendarView = () => {
   const [events, setEvents] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(dayjs("2025-03-01"));
@@ -75,12 +77,18 @@ const CalendarView = () => {
           : ""
       );
 
+      const enochDay = currentDate.isAfter(SPRING_EQUINOX)
+        ? currentDate.diff(SPRING_EQUINOX, "day") + 1
+        : null;
+
       cells.push(
         <div key={i} className={`day ${classNames.join(" ")}`}>
           {isCurrentMonth && (
             <>
               <div className="font-bold text-sm">{currentDate.format("MMM D")}</div>
-              <div className="text-xs text-gray-600">Day {i - startDay + 1}</div>
+              {enochDay && (
+                <div className="text-xs text-gray-600">Day {enochDay}</div>
+              )}
               {todayEvents.map((event) => (
                 <div key={event._id} className="text-xs mt-1">
                   <strong>{event.name}</strong>
@@ -104,24 +112,28 @@ const CalendarView = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 text-black p-4">
-      <h1 className="text-2xl font-bold text-center mb-2">
-        CONSECRATED DAYS OF YAHUAH
-      </h1>
-      <div className="flex justify-center items-center gap-4 mb-4">
+        <h1 className="calendar-view-title text-2xl font-bold">
+            CONSECRATED DAYS OF YAHUAH
+        </h1>
+        <h2 className="calendar-view-title text-xl font-semibold mb-2">
+            {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
+        </h2>
+
+      <div className="flex justify-center items-center gap-3 mb-4 flex-wrap">
         <button
           onClick={goToPreviousMonth}
           className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
         >
           ← Prev
         </button>
-        <h2 className="text-xl font-semibold">
-          {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
-        </h2>
         <button
           onClick={goToNextMonth}
           className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
         >
           Next →
+        </button>
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+          Download Calendar (.zip)
         </button>
       </div>
 
@@ -135,14 +147,8 @@ const CalendarView = () => {
         {renderCells()}
       </div>
 
-      <div className="download-button">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-          Download Calendar (.zip)
-        </button>
-      </div>
-
-      <div className="notes max-w-4xl mx-auto mt-6 bg-white p-4 border border-gray-300">
-        <h3 className="text-lg font-semibold mb-2">Explanations for Set-Apart Days</h3>
+      <div className="notes max-w-4xl mx-auto mt-4 bg-white p-4 border border-gray-300">
+        <h3 className="text-lg font-semibold mb-2 text-center">Explanations for Set-Apart Days</h3>
         {getFeastExplanations()}
       </div>
     </div>
