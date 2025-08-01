@@ -73,5 +73,24 @@ router.delete("/:id", async(req, res) => {
         res.status(500).json({ error: "Failed to delete testimony." });
     }
 });
+// Increment likes for a testimony
+router.post("/testimonies/:id/like", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const testimony = await Testimony.findById(id);
+    if (!testimony) {
+      return res.status(404).json({ message: "Testimony not found" });
+    }
+
+    testimony.likes = (testimony.likes || 0) + 1;
+    await testimony.save();
+
+    res.status(200).json({ message: "Like added", likes: testimony.likes });
+  } catch (err) {
+    console.error("Error updating likes:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 module.exports = router;

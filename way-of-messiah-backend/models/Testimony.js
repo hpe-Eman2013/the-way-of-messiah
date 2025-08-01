@@ -8,6 +8,7 @@ const TestimonySchema = new mongoose.Schema({
   imageUrl: String,
   approved: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
+  likes: { type: Number, default: 0 },
 });
 
 module.exports = mongoose.model("Testimony", TestimonySchema);
