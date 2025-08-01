@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
+dayjs.extend(require("dayjs/plugin/utc"));
 import dayjs from "dayjs";
 import Header from "../components/Header";
 import "../assets/css/EventsPage.css";
@@ -53,7 +55,7 @@ const EventsPage = () => {
           Upcoming Events & Gatherings
         </h1>
 
-        <div className="flex justify-center gap-4 mb-6">
+        <div className="flex flex-wrap justify-center gap-4 mb-6">
           <button
             onClick={() => setFilter("all")}
             className={`px-4 py-2 rounded ${
@@ -84,6 +86,16 @@ const EventsPage = () => {
           >
             Sabbaths
           </button>
+          <Link to="/events/list">
+            <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+              List View
+            </button>
+          </Link>
+          <Link to="/calendar-view">
+            <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded">
+              Calendar View
+            </button>
+          </Link>
         </div>
 
         {loading && <p>Loading events...</p>}
@@ -94,37 +106,37 @@ const EventsPage = () => {
             <h2 className="text-2xl font-bold mb-4 border-b border-gray-300 pb-1">
               🗓️ {month}
             </h2>
-        <div className="space-y-6">
+            <div className="space-y-6">
               {groupedEvents[month].map((event) => (
-            <div
-              key={event._id}
-              className={`event-card ${
-                event.name.toLowerCase() === "sabbath"
-                  ? "sabbath"
-                  : /feast|passover|atonement|tabernacles|shavuot/i.test(event.name)
-                  ? "feast"
-                  : "general"
-              }`}
-            >
-              <h2 className="text-xl font-semibold">{event.name}</h2>
-              <p className="text-gray-600">
-                📅 {dayjs(event.date).format("MMMM D, YYYY")} @ {event.time}
-              </p>
-              <p className="text-gray-600">📍 {event.location}</p>
-              <p className="mt-2">{event.description}</p>
-              {event.link && (
-                <a
-                  href={event.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-3 text-blue-600 hover:underline"
+                <div
+                  key={event._id}
+                  className={`event-card ${
+                    event.name.toLowerCase() === "sabbath"
+                      ? "sabbath"
+                      : /feast|passover|atonement|tabernacles|shavuot/i.test(event.name)
+                      ? "feast"
+                      : "general"
+                  }`}
                 >
-                  🔗 More Info / RSVP
-                </a>
-              )}
+                  <h2 className="text-xl font-semibold">{event.name}</h2>
+                  <p className="text-gray-600">
+                    📅 {dayjs(event.date).format("MMMM D, YYYY")} @ {event.time}
+                  </p>
+                  <p className="text-gray-600">📍 {event.location}</p>
+                  <p className="mt-2">{event.description}</p>
+                  {event.link && (
+                    <a
+                      href={event.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-3 text-blue-600 hover:underline"
+                    >
+                      🔗 More Info / RSVP
+                    </a>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
           </div>
         ))}
       </div>

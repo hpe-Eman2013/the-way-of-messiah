@@ -9,6 +9,10 @@ import Testimonies from "./pages/TestimoniesPage";
 import AdminLogin from "./pages/AdminLogin";
 import PrivateRoute from "./components/PrivateRoute";
 import EventsPage from "./pages/EventsPage";
+import AdminEventForm from "./pages/AdminEventForm";
+import CalendarView from './pages/CalendarView';
+// Inside <Routes>:
+
 
 function App() {
   return (
@@ -19,12 +23,14 @@ function App() {
           <>
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
+            <Route path="/admin/events/new" element={<AdminEventForm />} />
           </>
         )}
         <Route path="/submit-testimony" element={<SubmitTestimony />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/testimonies" element={<Testimonies />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/calendar-view" element={<CalendarView />} />
       </Routes>
     </BrowserRouter>
   );
