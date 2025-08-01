@@ -19,15 +19,29 @@ const CalendarView = () => {
     fetchEvents();
   }, [BASE_URL]);
 
-  const daysInMonth = selectedMonth.daysInMonth();
   const startDay = selectedMonth.startOf("month").day();
-  const totalCells = 35;
+  const daysInMonth = selectedMonth.daysInMonth();
+  const totalCells = startDay + daysInMonth > 35 ? 42 : 35;
 
   const isFeast = (name) =>
     /feast|passover|atonement|tabernacles|shavuot/i.test(name);
 
   const getEventsByDate = (date) =>
     events.filter((e) => dayjs(e.date).isSame(date, "day"));
+
+  const getFeastExplanations = () => {
+    const feastEvents = events.filter(
+      (e) =>
+        dayjs(e.date).isSame(selectedMonth, "month") &&
+        isFeast(e.name)
+    );
+    return feastEvents.map((e) => (
+      <p key={e._id}>
+        <strong>{dayjs(e.date).format("YYYY-MM-DD")}: {e.name}</strong><br />
+        {e.description}
+      </p>
+    ));
+  };
 
   const renderCells = () => {
     const cells = [];
@@ -64,9 +78,12 @@ const CalendarView = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 text-black p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">
-        {selectedMonth.format("MMMM YYYY")} - Enoch Calendar
+      <h1 className="text-2xl font-bold text-center mb-2">
+        CONSECRATED DAYS OF YAHUAH
       </h1>
+      <h2 className="text-xl font-semibold text-center mb-6">
+        {selectedMonth.format("MMMM YYYY")} - Enoch Calendar
+      </h2>
 
       <div className="calendar-header">
         {"Sun Mon Tue Wed Thu Fri Sat".split(" ").map((d) => (
@@ -82,6 +99,11 @@ const CalendarView = () => {
         <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
           Download Calendar (.zip)
         </button>
+      </div>
+
+      <div className="notes max-w-4xl mx-auto mt-6 bg-white p-4 border border-gray-300">
+        <h3 className="text-lg font-semibold mb-2">Explanations for Set-Apart Days</h3>
+        {getFeastExplanations()}
       </div>
     </div>
   );
