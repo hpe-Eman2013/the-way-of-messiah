@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-dayjs.extend(require("dayjs/plugin/utc"));
 import dayjs from "dayjs";
 import Header from "../components/Header";
 import "../assets/css/EventsPage.css";
 
+dayjs.extend(require("dayjs/plugin/utc"));
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
