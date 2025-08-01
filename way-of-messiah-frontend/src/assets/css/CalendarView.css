@@ -1,0 +1,56 @@
+body {
+  font-family: sans-serif;
+  background: #f9f9f9;
+}
+
+.calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: #e0e0e0;
+  font-weight: bold;
+  text-align: center;
+  height: 30px;
+  line-height: 30px;
+  font-size: 0.9rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 2px solid #444;
+}
+
+.day {
+  background: white;
+  min-height: 100px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  font-size: 0.85rem;
+}
+
+.day .font-bold {
+  color: #000;
+}
+
+.sabbath {
+  background-color: #ffefc2 !important;
+}
+
+.feast {
+  background-color: #ffd6d6 !important;
+}
+
+.download-button {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .calendar-grid {
+    font-size: 0.75rem;
+  }
+  .day {
+    min-height: 70px;
+  }
+}

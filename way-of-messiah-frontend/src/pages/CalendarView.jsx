@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import "../assets/css/CalendarView.css";
+
 dayjs.extend(utc);
 
 const CalendarView = () => {
@@ -66,19 +68,17 @@ const CalendarView = () => {
         {selectedMonth.format("MMMM YYYY")} - Enoch Calendar
       </h1>
 
-      <div className="grid grid-cols-7 text-center font-semibold mb-2">
+      <div className="calendar-header">
         {"Sun Mon Tue Wed Thu Fri Sat".split(" ").map((d) => (
-          <div key={d} className="bg-gray-200 py-2 text-sm">
-            {d}
-          </div>
+          <div key={d}>{d}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 border border-gray-300">
+      <div className="calendar-grid">
         {renderCells()}
       </div>
 
-      <div className="mt-6 max-w-4xl mx-auto">
+      <div className="download-button">
         <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
           Download Calendar (.zip)
         </button>
