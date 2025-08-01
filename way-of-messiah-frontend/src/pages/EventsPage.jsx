@@ -1,6 +1,7 @@
 import React from "react";
 import Header from "../components/Header";
 import "../assets/css/EventsPage.css";
+import dayjs from "dayjs";
 
 const events = [
   {
@@ -43,7 +44,7 @@ const EventsPage = () => {
             <div key={event.id} className="bg-white shadow-md rounded p-4 border border-gray-200">
               <h2 className="text-xl font-semibold">{event.name}</h2>
               <p className="text-gray-600">
-                📅 {new Date(event.date).toLocaleDateString()} @ {event.time}
+                📅 {dayjs(event.date).format("MMMM D, YYYY")} @ {event.time}
               </p>
               <p className="text-gray-600">📍 {event.location}</p>
               <p className="mt-2">{event.description}</p>
