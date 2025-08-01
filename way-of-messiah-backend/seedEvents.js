@@ -14,7 +14,7 @@ async function seedEvents() {
     });
     console.log("MongoDB connected.");
 
-    const filePath = path.join(__dirname, "events-data", "2025_enoch_calendar_events.json");
+    const filePath = path.join(__dirname, "events-data", "2025_enoch_calendar_events_fixed.json");
     const rawData = fs.readFileSync(filePath);
     const events = JSON.parse(rawData);
 
