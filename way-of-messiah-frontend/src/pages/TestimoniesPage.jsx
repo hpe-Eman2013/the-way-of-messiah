@@ -24,7 +24,7 @@ const TestimoniesPage = () => {
   }, []);
   const handleLike = async (id) => {
     try {
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const BASE_URL = import.meta.env.VITE_API_URL;
       await axios.post(`${BASE_URL}/api/testimonies/${id}/like`);
       setTestimonies((prev) =>
         prev.map((t) =>
