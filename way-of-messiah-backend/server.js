@@ -27,6 +27,7 @@ app.use("/api/admin", adminRouter);
 app.use("/api/auth", adminAuthRoutes);
 app.use("/admin", adminRoutes);
 app.use("/api", require("./routes/testimonies"));
+app.use("/api", require("./routes/events"));
 
 
 // Ensure uploads folder exists
