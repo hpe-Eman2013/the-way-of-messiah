@@ -35,6 +35,24 @@ const CalendarView = () => {
         dayjs(e.date).isSame(selectedMonth, "month") &&
         isFeast(e.name)
     );
+
+    if (feastEvents.length === 0) {
+      return (
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>No work</strong> – Exodus 20:10; Leviticus 23:3</li>
+          <li><strong>No kindling fire</strong> – Exodus 35:3</li>
+          <li><strong>No cooking/baking</strong> – Exodus 16:23</li>
+          <li><strong>No gathering food</strong> – Exodus 16:25-26</li>
+          <li><strong>No travel beyond limits</strong> – Exodus 16:29</li>
+          <li><strong>No burden-carrying</strong> – Jeremiah 17:21-22; Nehemiah 13:15-19</li>
+          <li><strong>No buying or selling</strong> – Nehemiah 10:31; 13:16-18</li>
+          <li><strong>No business or trading</strong> – Amos 8:5</li>
+          <li><strong>No fieldwork</strong> – Exodus 34:21</li>
+          <li><strong>No personal pleasure/seeking</strong> – Isaiah 58:13-14</li>
+        </ul>
+      );
+    }
+
     return feastEvents.map((e) => (
       <p key={e._id}>
         <strong>{dayjs(e.date).format("YYYY-MM-DD")}: {e.name}</strong><br />
