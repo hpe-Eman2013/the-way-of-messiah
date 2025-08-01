@@ -94,14 +94,36 @@ const CalendarView = () => {
     return cells;
   };
 
+  const goToPreviousMonth = () => {
+    setSelectedMonth((prev) => prev.subtract(1, "month"));
+  };
+
+  const goToNextMonth = () => {
+    setSelectedMonth((prev) => prev.add(1, "month"));
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 text-black p-4">
       <h1 className="text-2xl font-bold text-center mb-2">
         CONSECRATED DAYS OF YAHUAH
       </h1>
-      <h2 className="text-xl font-semibold text-center mb-6">
-        {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
-      </h2>
+      <div className="flex justify-center items-center gap-4 mb-4">
+        <button
+          onClick={goToPreviousMonth}
+          className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
+        >
+          ← Prev
+        </button>
+        <h2 className="text-xl font-semibold">
+          {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
+        </h2>
+        <button
+          onClick={goToNextMonth}
+          className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
+        >
+          Next →
+        </button>
+      </div>
 
       <div className="calendar-header">
         {"Sun Mon Tue Wed Thu Fri Sat".split(" ").map((d) => (
