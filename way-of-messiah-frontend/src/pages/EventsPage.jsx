@@ -38,6 +38,13 @@ const EventsPage = () => {
     return true;
   });
 
+  const groupedEvents = filteredEvents.reduce((acc, event) => {
+    const key = dayjs(event.date).format("MMMM YYYY");
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(event);
+    return acc;
+  }, {});
+
   return (
     <div className="min-h-screen bg-gray-100 text-black">
       <Header />
@@ -82,8 +89,13 @@ const EventsPage = () => {
         {loading && <p>Loading events...</p>}
         {error && <p className="text-red-500">{error}</p>}
 
+        {Object.keys(groupedEvents).map((month) => (
+          <div key={month} className="mb-10">
+            <h2 className="text-2xl font-bold mb-4 border-b border-gray-300 pb-1">
+              🗓️ {month}
+            </h2>
         <div className="space-y-6">
-          {filteredEvents.map((event) => (
+              {groupedEvents[month].map((event) => (
             <div
               key={event._id}
               className={`event-card ${
@@ -94,7 +106,6 @@ const EventsPage = () => {
                   : "general"
               }`}
             >
-
               <h2 className="text-xl font-semibold">{event.name}</h2>
               <p className="text-gray-600">
                 📅 {dayjs(event.date).format("MMMM D, YYYY")} @ {event.time}
@@ -114,6 +125,8 @@ const EventsPage = () => {
             </div>
           ))}
         </div>
+          </div>
+        ))}
       </div>
     </div>
   );
