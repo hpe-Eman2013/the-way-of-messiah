@@ -22,6 +22,11 @@ const TestimoniesPage = () => {
     };
     fetchTestimonies();
   }, []);
+  const hasLiked = (id) => {
+  const liked = JSON.parse(localStorage.getItem("likedTestimonies") || "[]");
+  return liked.includes(id);
+};
+
   const handleLike = async (id) => {
   // Get list of liked testimonies from localStorage
   const liked = JSON.parse(localStorage.getItem("likedTestimonies") || "[]");
@@ -93,9 +98,13 @@ const TestimoniesPage = () => {
                 />
               )}
               <div className="like-container">
-                <div onClick={() => handleLike(_id)} className="like-button">
-                  ❤️ Like
-                </div>
+                <button
+                  onClick={() => handleLike(_id)}
+                  className={`like-button ${hasLiked(_id) ? "disabled" : ""}`}
+                  disabled={hasLiked(_id)}
+                >
+                  {hasLiked(_id) ? "Liked ❤️" : "❤️ Like"}
+                </button>
                 <span className="like-count">
                   {likes || 0} like{(likes || 0) !== 1 ? "s" : ""}
                 </span>
