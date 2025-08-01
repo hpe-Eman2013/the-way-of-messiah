@@ -100,7 +100,7 @@ const CalendarView = () => {
         CONSECRATED DAYS OF YAHUAH
       </h1>
       <h2 className="text-xl font-semibold text-center mb-6">
-        {selectedMonth.format("MMMM YYYY")} - Enoch Calendar
+        {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
       </h2>
 
       <div className="calendar-header">
