@@ -13,14 +13,19 @@ const Testimony = require("./models/Testimony");
 const app = express();
 const PORT = process.env.PORT || 10000;
 const adminAuthRoutes = require("./routes/adminAuth");
+const adminRoutes = require("./routes/adminRoutes");
+const testimonyRoutes = require("./routes/testimonyRoutes");
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
+app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
 app.use("/api/testimonies", testimoniesRoute);
+app.use("/", testimonyRoutes); // allows /testimonies
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", adminAuthRoutes);
+app.use("/admin", adminRoutes);
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
@@ -30,14 +35,15 @@ if (!fs.existsSync(uploadDir)) {
 
 // Multer config for file uploads
 const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, uploadDir);
+  destination: function (req, file, cb) {
+    cb(null, "public/uploads/"); // ensure this folder exists
     },
-    filename: function(req, file, cb) {
-        const uniqueName = Date.now() + "-" + file.originalname.replace(/\s+/g, "-");
-        cb(null, uniqueName);
-    },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + file.originalname;
+    cb(null, uniqueSuffix);
+  }
 });
+
 const upload = multer({ storage });
 
 // Routes
@@ -67,20 +73,29 @@ app.patch("/api/testimonies/:id/approve", async(req, res) => {
     }
 });
 
-// POST testimony (with optional image upload)
+// POST testimony (with optional image upload or URL)
 app.post("/api/submit-testimony", upload.single("image"), async(req, res) => {
-    const { name, message } = req.body;
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
+    console.log("📥 BODY:", req.body);
+    console.log("🖼️ FILE:", req.file);
+    const { name, message, imageUrl: submittedUrl } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: "Message is required." });
+    }
+
+    let finalImageUrl = "";
+
+    if (req.file) {
+        finalImageUrl = `/uploads/${req.file.filename}`;
+    } else if (submittedUrl) {
+        finalImageUrl = submittedUrl;
     }
 
     try {
         const testimony = new Testimony({
             name,
             message,
-            imageUrl,
+            imageUrl: finalImageUrl,
             approved: false,
             createdAt: new Date(),
         });
