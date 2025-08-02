@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Consecrated Days of Yahuah - {{MONTH}} {{YEAR}}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f9f9f9;
+      color: #222;
+    }
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .navigation {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .navigation a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #0366d6;
+    }
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    li {
+      padding: 8px 0;
+      border-bottom: 1px solid #ccc;
+    }
+    footer {
+      margin-top: 30px;
+      font-size: 12px;
+      text-align: center;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Consecrated Days of Yahuah - {{MONTH}} {{YEAR}}</h1>
+
+  <div class="navigation">
+    <!-- These can be filled in future if linking is added -->
+    {{PREV_LINK}} | {{NEXT_LINK}}
+  </div>
+
+  <ul>
+    {{EVENTS}}
+  </ul>
+
+  <footer>
+    This calendar is based on the 364-day Enoch calendar.
+  </footer>
+</body>
+</html>
