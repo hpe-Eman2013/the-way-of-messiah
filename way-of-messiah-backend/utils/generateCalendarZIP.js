@@ -69,7 +69,7 @@ async function generateCalendarZIP(events, enochStart) {
       .replace("{{PREV_LINK}}", "")
       .replace("{{NEXT_LINK}}", "");
 
-    const filename = `calendar-${current.format("MM-YYYY")}.html`;
+    const filename = `${current.format("YYYY-MM-DD")}_calendar.html`;
     zip.file(filename, populatedHtml);
     current = current.add(1, "month");
   }
