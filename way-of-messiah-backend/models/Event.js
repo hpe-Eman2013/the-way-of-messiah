@@ -2,15 +2,11 @@ const mongoose = require("mongoose");
 
 const eventSchema = new mongoose.Schema({
   name: String,
-  date: String,
+  date: Date, // << THIS MUST BE Date — not String
   time: String,
   location: String,
   description: String,
   link: String,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("Event", eventSchema);
