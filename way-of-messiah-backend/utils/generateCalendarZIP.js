@@ -45,13 +45,20 @@ async function generateCalendarZIP(events, enochStart) {
 
       if (inCurrentMonth) {
         content += `${gridDate.format("MMM D")}`;
+
         const match = monthEvents.find(e => dayjs(e.date).isSame(gridDate, 'day'));
+        const hasFeast = monthEvents.some(e => dayjs(e.date).isSame(gridDate, 'day') && e.name !== "Sabbath");
+
       if (match) {
-          content += `<br>Day ${match.enochDay ?? ''}`;
-          content += match.name === "Sabbath"
-            ? `<br><strong>Sabbath</strong>`
-            : `<br>${match.name}`;
-          if (match.name === "Sabbath") classList.push("sabbath");
+          const enochDay = match.enochDay ?? (gridDate.diff(enochStart, 'day') + 1);
+          content += `<br>Day ${enochDay}`;
+
+          if (match.name === "Sabbath" && !hasFeast) {
+            content += `<br><strong>Sabbath</strong>`;
+            classList.push("sabbath");
+          } else if (match.name !== "Sabbath") {
+            content += `<br>${match.name}`;
+          }
       } else if (gridDate.isSameOrAfter(enochStart) && gridDate.isBefore(end)) {
         const enochDay = gridDate.diff(enochStart, 'day') + 1;
         content += `<br>Day ${enochDay}`;
@@ -65,9 +72,7 @@ async function generateCalendarZIP(events, enochStart) {
     const populatedHtml = templateContent
       .replace(/{{MONTH}}/g, current.format("MMMM"))
       .replace(/{{YEAR}}/g, current.format("YYYY"))
-      .replace("{{DAY_CELLS}}", dayCells)
-      .replace("{{PREV_LINK}}", "")
-      .replace("{{NEXT_LINK}}", "");
+      .replace("{{DAY_CELLS}}", dayCells);
 
     const filename = `${current.format("YYYY-MM-DD")}_calendar.html`;
     zip.file(filename, populatedHtml);
@@ -75,7 +80,7 @@ async function generateCalendarZIP(events, enochStart) {
   }
 
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
-  const zipFilename = `Enoch-Calendar-${enochStart.format("MM-YYYY")}-${end.format("MM-YYYY")}.zip`;
+  const zipFilename = `EnochCalendar_${enochStart.format("YYYY-MM-DD")}_to_${end.format("YYYY-MM-DD")}.zip`;
   return { filename: zipFilename, buffer: zipBuffer };
 }
 
