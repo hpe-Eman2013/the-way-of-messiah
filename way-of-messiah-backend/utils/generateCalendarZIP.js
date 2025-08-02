@@ -3,19 +3,17 @@
 const JSZip = require("jszip");
 const { jsPDF } = require("jspdf");
 const dayjs = require("dayjs");
-const { getEventsFromDB } = require("../models/CalendarService"); // hypothetical DB call
 
 /**
- * Generates a ZIP file buffer containing PDFs for each month
- * from the astronomical Spring Equinox start (Day 1) until 364 days later.
+ * @param {Array} events - Array of calendar events from DB
+ * @param {dayjs.Dayjs} enochStart - Start of the 364-day cycle
  */
-async function generateCalendarZIP() {
-  const zip = new JSZip();
-  const { events, enochStart, enochEnd } = await getEventsFromDB();
+async function generateCalendarZIP(events, enochStart) {
   if (!events || events.length === 0) throw new Error("No events found");
-    
-  // Infer start and end from data  
-  let current = enochStart.startOf('month');
+
+  const zip = new JSZip();
+  let current = enochStart.startOf("month");
+
   for (let i = 0; i < 13; i++) {
     const startOfMonth = current.startOf("month");
     const endOfMonth = current.endOf("month");
