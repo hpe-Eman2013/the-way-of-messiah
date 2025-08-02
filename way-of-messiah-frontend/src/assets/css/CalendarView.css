@@ -50,6 +50,15 @@ body {
   margin-top: 1.5rem;
   text-align: center;
 }
+.hidden-pdf-capture {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 1200px;
+  padding: 20px;
+  background: white;
+  z-index: -1;
+}
 
 @media (max-width: 768px) {
   .calendar-grid {
