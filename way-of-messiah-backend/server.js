@@ -15,6 +15,7 @@ const PORT = process.env.PORT || 10000;
 const adminAuthRoutes = require("./routes/adminAuth");
 const adminRoutes = require("./routes/adminRoutes");
 const testimonyRoutes = require("./routes/testimonyRoutes");
+const calendarRoutes = require('./routes/calendarRoutes');
 
 // Middleware
 app.use(cors());
@@ -28,6 +29,7 @@ app.use("/api/auth", adminAuthRoutes);
 app.use("/admin", adminRoutes);
 app.use("/api", require("./routes/testimonies"));
 app.use("/api", require("./routes/events"));
+app.use('/calendar', calendarRoutes);
 
 
 // Ensure uploads folder exists

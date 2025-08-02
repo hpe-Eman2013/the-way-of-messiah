@@ -129,7 +129,7 @@ const CalendarView = () => {
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'EnochCalendar_March2025_to_March2026.zip';
+      a.download = '';
       document.body.appendChild(a);
       a.click();
       a.remove();
