@@ -1,9 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import "../assets/css/CalendarView.css";
 
 dayjs.extend(utc);
@@ -13,9 +11,8 @@ const SPRING_EQUINOX = dayjs("2025-03-20");
 const CalendarView = () => {
   const [events, setEvents] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(dayjs("2025-03-01"));
+  const [downloading, setDownloading] = useState(false);
   const BASE_URL = import.meta.env.VITE_API_URL;
-
-  const pdfRef = useRef();
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -79,17 +76,17 @@ const CalendarView = () => {
           : ""
       );
       const calculateEnochDay = (date) => {
-  const firstCycleStart = SPRING_EQUINOX.add(1, "day");
-  if (date.isBefore(firstCycleStart)) return null;
+        const firstCycleStart = SPRING_EQUINOX.add(1, "day");
+        if (date.isBefore(firstCycleStart)) return null;
 
-  const daysSinceFirst = date.diff(firstCycleStart, "day");
-  const currentCycleStart = firstCycleStart.add(Math.floor(daysSinceFirst / 364) * 364, "day");
-  const enochDay = date.diff(currentCycleStart, "day") + 1;
+        const daysSinceFirst = date.diff(firstCycleStart, "day");
+        const currentCycleStart = firstCycleStart.add(Math.floor(daysSinceFirst / 364) * 364, "day");
+        const enochDay = date.diff(currentCycleStart, "day") + 1;
 
-  return enochDay > 364 ? null : enochDay;
-};
+        return enochDay > 364 ? null : enochDay;
+      };
 
-const enochDay = calculateEnochDay(currentDate);
+      const enochDay = calculateEnochDay(currentDate);
 
       cells.push(
         <div key={i} className={`day ${classNames.join(" ")}`}>
@@ -118,26 +115,31 @@ const enochDay = calculateEnochDay(currentDate);
     setSelectedMonth((prev) => prev.add(1, "month"));
   };
 
-  const generateCalendarPDF = async () => {
-    const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1200, 850] });
-    const start = dayjs("2025-03-01");
-    const end = dayjs("2026-03-01");
-    let current = start;
+  const handleDownloadCalendar = async () => {
+    try {
+      setDownloading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/calendar/download`, {
+        method: 'GET',
+      });
 
-    for (let i = 0; i < 13; i++) {
-      setSelectedMonth(current);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      if (!response.ok) throw new Error('Failed to download calendar');
 
-      const input = pdfRef.current;
-      const canvas = await html2canvas(input);
-      const imgData = canvas.toDataURL("image/png");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
 
-      if (i !== 0) pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, 0, 1200, 850);
-
-      current = current.add(1, "month");
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'EnochCalendar_March2025_to_March2026.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading calendar:', error);
+      alert('Download failed. Please try again.');
+    } finally {
+      setDownloading(false);
     }
-    pdf.save("Enoch_Calendar_2025-2026.pdf");
   };
 
   return (
@@ -156,8 +158,11 @@ const enochDay = calculateEnochDay(currentDate);
         <button onClick={goToNextMonth} className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded">
           Next →
         </button>
-        <button onClick={generateCalendarPDF} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-          Download Calendar (.zip)
+        <button onClick={handleDownloadCalendar} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2">
+          {downloading ? (
+            <span className="loader inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          ) : null}
+          {downloading ? 'Downloading...' : 'Download Calendar (.zip)'}
         </button>
       </div>
 
@@ -172,26 +177,6 @@ const enochDay = calculateEnochDay(currentDate);
       <div className="notes max-w-4xl mx-auto mt-4 bg-white p-4 border border-gray-300">
         <h3 className="text-lg font-semibold mb-2 text-center">Explanations for Set-Apart Days</h3>
         {getFeastExplanations()}
-      </div>
-
-      {/* Hidden calendar for PDF capture */}
-      <div style={{ display: "none" }}>
-        <div ref={pdfRef} className="hidden-pdf-capture">
-          <h1 className="calendar-view-title text-2xl font-bold">CONSECRATED DAYS OF YAHUAH</h1>
-          <h2 className="calendar-view-title text-xl font-semibold mb-2">
-            {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
-          </h2>
-          <div className="calendar-header">
-            {"Sun Mon Tue Wed Thu Fri Sat".split(" ").map((d) => (
-              <div key={d}>{d}</div>
-            ))}
-          </div>
-          <div className="calendar-grid">{renderCells(selectedMonth)}</div>
-          <div className="notes mt-4 bg-white p-4 border border-gray-300">
-            <h3 className="text-lg font-semibold mb-2 text-center">Explanations for Set-Apart Days</h3>
-            {getFeastExplanations()}
-          </div>
-        </div>
       </div>
     </div>
   );
