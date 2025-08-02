@@ -96,7 +96,7 @@ const enochDay = calculateEnochDay(currentDate);
           {isCurrentMonth && (
             <>
               <div className="font-bold text-sm">{currentDate.format("MMM D")}</div>
-              {enochDay && <div className="text-xs text-gray-600">Day {enochDay}</div>}
+              {enochDay !== null && <div className="text-xs text-gray-600">Day {enochDay}</div>}
               {todayEvents.map((event) => (
                 <div key={event._id} className="text-xs mt-1">
                   <strong>{event.name}</strong>
