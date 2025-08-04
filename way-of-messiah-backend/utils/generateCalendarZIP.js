@@ -26,8 +26,6 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
   const htmlTemplatePath = path.join(__dirname, "..", "public", "calendar-template.html");
   const templateContent = await fs.readFile(htmlTemplatePath, "utf-8");
 
-  const sabbathOffset = 6; // Thursday alignment
-
   while (current.isBefore(end)) {
     const startOfMonth = current.startOf("month");
     const endOfMonth = current.endOf("month");
@@ -41,10 +39,8 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
       monthEvents.filter(e => e.name !== "Sabbath").map(e => e.name)
     );
 
-    const enochWeekStart = enochStart.day();
-    const offset = (startOfMonth.day() - enochWeekStart + 7) % 7;
-    const firstDay = startOfMonth.subtract(offset, "day");
-    const totalCells = (offset + current.daysInMonth() > 35) ? 42 : 35;
+    const firstDay = startOfMonth.startOf("week");
+    const totalCells = (firstDay.day() + current.daysInMonth() > 35) ? 42 : 35;
 
     let dayCells = "";
 
@@ -61,7 +57,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
         const enochDay = gridDate.diff(enochStart, 'day') + 1;
           content += `<br>Day ${enochDay}`;
 
-        const isSabbath = (((enochDay - sabbathOffset) % 7 + 7) % 7) === 0;
+          const isSabbath = ((enochDay - 7) % 7 === 0);
         const match = monthEvents.find(e => dayjs(e.date).isSame(gridDate, 'day'));
         const isFeast = match && match.name !== "Sabbath";
 
@@ -82,7 +78,6 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
 
     let explanationHTML = "";
 
-    // Add feast explanations
       feastNamesInMonth.forEach(name => {
         const ex = explanations[name];
         if (ex) {
@@ -94,7 +89,6 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
         }
       });
 
-    // Always add Sabbath explanation
     if (explanations.Sabbath) {
       const sabbath = explanations.Sabbath;
       explanationHTML += `<h3>Sabbath</h3><ul>`;
