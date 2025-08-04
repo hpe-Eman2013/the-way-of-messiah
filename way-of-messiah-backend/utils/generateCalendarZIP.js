@@ -57,7 +57,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
         content += `${gridDate.format("MMM D")}`;
 
         const enochDay = gridDate.diff(enochStart, 'day') + 1;
-        const isSabbath = ((enochDay - 1 - sabbathOffset) % 7 === 0);
+        const isSabbath = ((enochDay - sabbathOffset) % 7 === 0);
         const match = monthEvents.find(e => dayjs(e.date).isSame(gridDate, 'day'));
         const isFeast = match && match.name !== "Sabbath";
 
@@ -91,8 +91,8 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
         }
       });
     }
-    // Always append Sabbath info after Feast info
-    if (explanations.Sabbath) {
+    // Append Sabbath explanation only if no feast in month
+    if (!hasFeastThisMonth && explanations.Sabbath) {
       const sabbath = explanations.Sabbath;
       explanationHTML += `<h3>Sabbath</h3><ul>`;
       for (const [label, text] of Object.entries(sabbath)) {
