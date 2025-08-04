@@ -26,8 +26,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
   const htmlTemplatePath = path.join(__dirname, "..", "public", "calendar-template.html");
   const templateContent = await fs.readFile(htmlTemplatePath, "utf-8");
 
-  // Offset for Enoch Sabbath start: if Day 1 = Friday, Sabbath = Thursday => offset = 6
-  const sabbathOffset = 6;
+  const sabbathOffset = 6; // Thursday alignment
 
   while (current.isBefore(end)) {
     const startOfMonth = current.startOf("month");
@@ -42,8 +41,11 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
       monthEvents.filter(e => e.name !== "Sabbath").map(e => e.name)
     );
 
-    const firstDay = startOfMonth.startOf("week");
-    const totalCells = (startOfMonth.day() + current.daysInMonth() > 35) ? 42 : 35;
+    const enochWeekStart = enochStart.day();
+    const offset = (startOfMonth.day() - enochWeekStart + 7) % 7;
+    const firstDay = startOfMonth.subtract(offset, "day");
+    const totalCells = (offset + current.daysInMonth() > 35) ? 42 : 35;
+
     let dayCells = "";
 
     for (let i = 0; i < totalCells; i++) {
@@ -80,7 +82,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
 
     let explanationHTML = "";
 
-    // Always add all feast explanations
+    // Add feast explanations
       feastNamesInMonth.forEach(name => {
         const ex = explanations[name];
         if (ex) {
@@ -92,7 +94,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
         }
       });
 
-    // Always append Sabbath explanation if available
+    // Always add Sabbath explanation
     if (explanations.Sabbath) {
       const sabbath = explanations.Sabbath;
       explanationHTML += `<h3>Sabbath</h3><ul>`;
