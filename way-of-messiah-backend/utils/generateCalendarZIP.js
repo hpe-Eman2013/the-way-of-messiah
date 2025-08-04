@@ -27,7 +27,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
   const templateContent = await fs.readFile(htmlTemplatePath, "utf-8");
 
   // Offset for Enoch Sabbath start: if Sabbath is on Thursday (day 4 index), offset = 6
-  const sabbathOffset = 6; // days from enochStart to first Sabbath (Thursday)
+  const sabbathOffset = 7; // days from enochStart to first Sabbath (Thursday)
 
   while (current.isBefore(end)) {
     const startOfMonth = current.startOf("month");
