@@ -27,7 +27,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
   const templateContent = await fs.readFile(htmlTemplatePath, "utf-8");
 
   // Offset for Enoch Sabbath start: if Day 1 = Friday, Sabbath = Thursday => offset = 6
-  const sabbathOffset = 6;
+  const sabbathOffset = 7;
 
   while (current.isBefore(end)) {
     const startOfMonth = current.startOf("month");
@@ -56,7 +56,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
         content += `${gridDate.format("MMM D")}`;
 
         const enochDay = gridDate.diff(enochStart, 'day') + 1;
-        const isSabbath = (((enochDay - sabbathOffset) % 7 + 7) % 7) === 0;
+        const isSabbath = (enochDay % sabbathOffset) === 0;
         const match = monthEvents.find(e => dayjs(e.date).isSame(gridDate, 'day'));
         const isFeast = match && match.name !== "Sabbath";
 
