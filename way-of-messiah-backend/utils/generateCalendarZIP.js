@@ -64,10 +64,11 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
         if (gridDate.isSameOrAfter(enochStart) && gridDate.isBefore(end)) {
           content += `<br>Day ${enochDay}`;
 
-          if (isSabbath && !hasFeastThisMonth) {
+          if (isSabbath) {
             content += `<br><strong>Sabbath</strong>`;
             classList.push("sabbath");
-          } else if (isFeast) {
+          }
+          if (isFeast) {
             content += `<br><strong>${match.name}</strong>`;
             classList.push("feast");
           }
@@ -92,7 +93,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
       });
     }
     // Append Sabbath explanation only if no feast in month
-    if (!hasFeastThisMonth && explanations.Sabbath) {
+    if (explanations.Sabbath) {
       const sabbath = explanations.Sabbath;
       explanationHTML += `<h3>Sabbath</h3><ul>`;
       for (const [label, text] of Object.entries(sabbath)) {
