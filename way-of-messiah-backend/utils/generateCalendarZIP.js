@@ -26,6 +26,9 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
   const htmlTemplatePath = path.join(__dirname, "..", "public", "calendar-template.html");
   const templateContent = await fs.readFile(htmlTemplatePath, "utf-8");
 
+  // Offset for Enoch Sabbath start: if Sabbath is on Thursday (day 4 index), offset = 6
+  const sabbathOffset = 6; // days from enochStart to first Sabbath (Thursday)
+
   while (current.isBefore(end)) {
     const startOfMonth = current.startOf("month");
     const endOfMonth = current.endOf("month");
@@ -53,23 +56,21 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
       if (inCurrentMonth) {
         content += `${gridDate.format("MMM D")}`;
 
+        const enochDay = gridDate.diff(enochStart, 'day') + 1;
+        const isSabbath = ((enochDay - 1 - sabbathOffset) % 7 === 0);
         const match = monthEvents.find(e => dayjs(e.date).isSame(gridDate, 'day'));
-        const isSabbath = match?.name === "Sabbath";
         const isFeast = match && match.name !== "Sabbath";
 
-      if (match) {
-          const enochDay = match.enochDay ?? (gridDate.diff(enochStart, 'day') + 1);
+        if (gridDate.isSameOrAfter(enochStart) && gridDate.isBefore(end)) {
           content += `<br>Day ${enochDay}`;
 
           if (isSabbath && !hasFeastThisMonth) {
             content += `<br><strong>Sabbath</strong>`;
             classList.push("sabbath");
           } else if (isFeast) {
-            content += `<br>${match.name}`;
+            content += `<br><strong>${match.name}</strong>`;
+            classList.push("feast");
           }
-      } else if (gridDate.isSameOrAfter(enochStart) && gridDate.isBefore(end)) {
-        const enochDay = gridDate.diff(enochStart, 'day') + 1;
-        content += `<br>Day ${enochDay}`;
       }
       }
 
@@ -89,7 +90,9 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
           explanationHTML += `</ul>`;
         }
       });
-    } else if (explanations.Sabbath) {
+    }
+    // Always append Sabbath info after Feast info
+    if (explanations.Sabbath) {
       const sabbath = explanations.Sabbath;
       explanationHTML += `<h3>Sabbath</h3><ul>`;
       for (const [label, text] of Object.entries(sabbath)) {
