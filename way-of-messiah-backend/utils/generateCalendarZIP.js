@@ -56,7 +56,7 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
         content += `${gridDate.format("MMM D")}`;
 
         const enochDay = gridDate.diff(enochStart, 'day') + 1;
-        const isSabbath = ((enochDay - sabbathOffset) % 7 === 0);
+        const isSabbath = (((enochDay - sabbathOffset) % 7 + 7) % 7) === 0;
         const match = monthEvents.find(e => dayjs(e.date).isSame(gridDate, 'day'));
         const isFeast = match && match.name !== "Sabbath";
 
