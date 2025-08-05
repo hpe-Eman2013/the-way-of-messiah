@@ -63,8 +63,8 @@
     "date": {
       "$date": "2025-03-27T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 7",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -133,8 +133,8 @@
     "date": {
       "$date": "2025-04-03T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 14",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -203,8 +203,8 @@
     "date": {
       "$date": "2025-04-10T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 21",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -273,8 +273,8 @@
     "date": {
       "$date": "2025-04-17T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 28",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -343,8 +343,8 @@
     "date": {
       "$date": "2025-04-24T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 35",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -413,8 +413,8 @@
     "date": {
       "$date": "2025-05-01T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 42",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -483,8 +483,8 @@
     "date": {
       "$date": "2025-05-08T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 49",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -553,8 +553,8 @@
     "date": {
       "$date": "2025-05-15T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 56",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -623,8 +623,8 @@
     "date": {
       "$date": "2025-05-22T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 63",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -693,8 +693,8 @@
     "date": {
       "$date": "2025-05-29T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 70",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -763,8 +763,8 @@
     "date": {
       "$date": "2025-06-05T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 77",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -833,8 +833,8 @@
     "date": {
       "$date": "2025-06-12T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 84",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -903,8 +903,8 @@
     "date": {
       "$date": "2025-06-19T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 91",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -973,8 +973,8 @@
     "date": {
       "$date": "2025-06-26T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 98",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1043,8 +1043,8 @@
     "date": {
       "$date": "2025-07-03T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 105",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1113,8 +1113,8 @@
     "date": {
       "$date": "2025-07-10T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 112",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1183,8 +1183,8 @@
     "date": {
       "$date": "2025-07-17T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 119",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1253,8 +1253,8 @@
     "date": {
       "$date": "2025-07-24T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 126",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1323,8 +1323,8 @@
     "date": {
       "$date": "2025-07-31T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 133",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1393,8 +1393,8 @@
     "date": {
       "$date": "2025-08-07T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 140",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1463,8 +1463,8 @@
     "date": {
       "$date": "2025-08-14T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 147",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1533,8 +1533,8 @@
     "date": {
       "$date": "2025-08-21T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 154",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1603,8 +1603,8 @@
     "date": {
       "$date": "2025-08-28T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 161",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1673,8 +1673,8 @@
     "date": {
       "$date": "2025-09-04T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 168",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1743,8 +1743,8 @@
     "date": {
       "$date": "2025-09-11T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 175",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1813,8 +1813,8 @@
     "date": {
       "$date": "2025-09-18T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 182",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1883,8 +1883,8 @@
     "date": {
       "$date": "2025-09-25T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 189",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -1953,8 +1953,8 @@
     "date": {
       "$date": "2025-10-02T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 196",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2023,8 +2023,8 @@
     "date": {
       "$date": "2025-10-09T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 203",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2093,8 +2093,8 @@
     "date": {
       "$date": "2025-10-16T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 210",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2163,8 +2163,8 @@
     "date": {
       "$date": "2025-10-23T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 217",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2233,8 +2233,8 @@
     "date": {
       "$date": "2025-10-30T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 224",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2303,8 +2303,8 @@
     "date": {
       "$date": "2025-11-06T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 231",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2373,8 +2373,8 @@
     "date": {
       "$date": "2025-11-13T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 238",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2443,8 +2443,8 @@
     "date": {
       "$date": "2025-11-20T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 245",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2513,8 +2513,8 @@
     "date": {
       "$date": "2025-11-27T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 252",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2583,8 +2583,8 @@
     "date": {
       "$date": "2025-12-04T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 259",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2653,8 +2653,8 @@
     "date": {
       "$date": "2025-12-11T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 266",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2723,8 +2723,8 @@
     "date": {
       "$date": "2025-12-18T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 273",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2793,8 +2793,8 @@
     "date": {
       "$date": "2025-12-25T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 280",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2863,8 +2863,8 @@
     "date": {
       "$date": "2026-01-01T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 287",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -2933,8 +2933,8 @@
     "date": {
       "$date": "2026-01-08T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 294",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3003,8 +3003,8 @@
     "date": {
       "$date": "2026-01-15T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 301",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3073,8 +3073,8 @@
     "date": {
       "$date": "2026-01-22T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 308",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3143,8 +3143,8 @@
     "date": {
       "$date": "2026-01-29T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 315",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3213,8 +3213,8 @@
     "date": {
       "$date": "2026-02-05T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 322",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3283,8 +3283,8 @@
     "date": {
       "$date": "2026-02-12T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 329",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3353,8 +3353,8 @@
     "date": {
       "$date": "2026-02-19T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 336",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3423,8 +3423,8 @@
     "date": {
       "$date": "2026-02-26T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 343",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3493,8 +3493,8 @@
     "date": {
       "$date": "2026-03-05T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 350",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3563,8 +3563,8 @@
     "date": {
       "$date": "2026-03-12T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 357",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""
@@ -3633,8 +3633,8 @@
     "date": {
       "$date": "2026-03-19T00:00:00.000Z"
     },
-    "name": "Sabbath",
-    "description": "",
+    "name": "Day 364",
+    "description": "Sabbath",
     "location": "",
     "time": "",
     "link": ""

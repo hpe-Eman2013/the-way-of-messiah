@@ -59,12 +59,14 @@ async function generateCalendarZIP(events, enochStart, explanations = {}) {
 
           const isSabbath = ((enochDay - 7) % 7 === 0);
         const match = monthEvents.find(e => dayjs(e.date).isSame(gridDate, 'day'));
-        const isFeast = match && match.name !== "Sabbath";
+        const isFeast = match && match.name.startsWith("Day") && match.description !== "Sabbath";
 
-          if (isSabbath) {
+
+          if (match?.description === "Sabbath") {
             content += `<br><strong>Sabbath</strong>`;
             classList.push("sabbath");
           }
+
           if (isFeast) {
             content += `<br><strong>${match.name}</strong>`;
             classList.push("feast");
