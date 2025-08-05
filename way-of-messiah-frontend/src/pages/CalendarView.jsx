@@ -45,7 +45,7 @@ const CalendarView = () => {
 
     if (feastEvents.length === 0) {
       const sabbathInfo = explanations.find(
-        (e) => e.name.toLowerCase() === "sabbath"
+  (e) => e.description?.toLowerCase().includes("sabbath")
       );
       if (!sabbathInfo) return <p>No explanation found for Sabbath.</p>;
 
