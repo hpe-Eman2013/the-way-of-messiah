@@ -17,7 +17,14 @@ router.get("/download", async (req, res) => {
     await fs.mkdir(path.dirname(tmpPath), { recursive: true });
 
     await fs.writeFile(tmpPath, zipBuffer);
-    res.download(tmpPath, zipFilename, err => {
+    // Dynamic filename
+    const formatDate = date => {
+      const month = date.toLocaleString("en-US", { month: "short" });
+      const year = date.getFullYear();
+      return `${month}${year}`;
+    };
+    const filenameLabel = `Consecrated_Calendar_${formatDate(enochStart)}_to_${formatDate(enochEnd)}.zip`;
+     res.download(tmpPath, filenameLabel, err => {
       if (err) {
         console.error("Download error:", err);
         res.status(500).send("Failed to download calendar ZIP.");
