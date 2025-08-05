@@ -6,9 +6,9 @@ import "../assets/css/CalendarView.css";
 
 dayjs.extend(utc);
 
-const [springEquinox, setSpringEquinox] = useState(null);
 
 const CalendarView = () => {
+  const [springEquinox, setSpringEquinox] = useState(null);
   const [events, setEvents] = useState([]);
   const [explanations, setExplanations] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(dayjs("2025-03-01"));
