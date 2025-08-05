@@ -122,9 +122,8 @@ const EventsPage = () => {
                 >
                   <h2 className="text-xl font-semibold">{event.name}</h2>
                  <p className="text-gray-600">
-                  🗓️ {dayjs.utc(event.date).local().format("MMMM D, YYYY")} @ {event.time}
+                    🗓️ {dayjs.utc(event.date).format("MMMM D, YYYY")} @ {event.time}
                 </p>
-
                   <p className="text-gray-600">📍 {event.location}</p>
                   <p className="mt-2">{event.description}</p>
                   {event.link && (

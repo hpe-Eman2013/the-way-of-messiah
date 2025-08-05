@@ -6,7 +6,7 @@ import "../assets/css/CalendarView.css";
 
 dayjs.extend(utc);
 
-const SPRING_EQUINOX = dayjs("2025-03-20");
+const [springEquinox, setSpringEquinox] = useState(null);
 
 const CalendarView = () => {
   const [events, setEvents] = useState([]);
@@ -16,6 +16,17 @@ const CalendarView = () => {
   const BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
+    const fetchEquinox = async () => {
+      try {
+        const year = selectedMonth.year();
+        const res = await axios.get(`${BASE_URL}/api/equinox?year=${year}`);
+        setSpringEquinox(dayjs.utc(res.data.springEquinox));
+      } catch (err) {
+        console.error("Error fetching spring equinox:", err);
+      }
+    };
+    fetchEquinox();
+
     const fetchData = async () => {
       try {
         const [eventsRes, explanationsRes] = await Promise.all([
@@ -101,14 +112,15 @@ const CalendarView = () => {
       const isCurrentMonth = currentDate.month() === month.month();
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDate) : [];
       const classNames = todayEvents.map((e) =>
-        e.name.toLowerCase() === "sabbath"
+        e.description?.toLowerCase().includes("sabbath")
           ? "sabbath"
           : isFeast(e.name)
           ? "feast"
           : ""
       );
       const calculateEnochDay = (date) => {
-        const firstCycleStart = SPRING_EQUINOX.add(1, "day");
+        if (!springEquinox) return null;
+        const firstCycleStart = springEquinox.add(1, "day");
         if (date.isBefore(firstCycleStart)) return null;
 
         const daysSinceFirst = date.diff(firstCycleStart, "day");
