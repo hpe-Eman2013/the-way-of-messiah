@@ -86,8 +86,12 @@ const CalendarView = () => {
     if (feastEvents.length === 0) return null;
 
     return feastEvents.map((e) => {
+      const feastTag = Array.isArray(e.description)
+        ? e.description.find(d => isFeast(d))
+        : isFeast(e.description) ? e.description : null;
+
       const info = explanations.find(
-        (x) => x.name.toLowerCase() === e.name.toLowerCase()
+        (x) => x.name.toLowerCase() === feastTag?.toLowerCase()
       );
       return (
         <div key={e._id} className="mb-3">
