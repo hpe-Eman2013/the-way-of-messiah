@@ -19,8 +19,9 @@ router.get("/download", async (req, res) => {
     await fs.writeFile(tmpPath, zipBuffer);
     // Dynamic filename
     const formatDate = date => {
-      const month = date.toLocaleString("en-US", { month: "short" });
-      const year = date.getFullYear();
+      const d = new Date(date); // ← this line ensures it's a Date object
+      const month = d.toLocaleString("en-US", { month: "short" });
+      const year = d.getFullYear();
       return `${month}${year}`;
     };
     const filenameLabel = `Consecrated_Calendar_${formatDate(enochStart)}_to_${formatDate(enochEnd)}.zip`;
