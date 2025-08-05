@@ -10,16 +10,25 @@ const SPRING_EQUINOX = dayjs("2025-03-20");
 
 const CalendarView = () => {
   const [events, setEvents] = useState([]);
+  const [explanations, setExplanations] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(dayjs("2025-03-01"));
   const [downloading, setDownloading] = useState(false);
   const BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      const res = await axios.get(`${BASE_URL}/api/events`);
-      setEvents(res.data);
+    const fetchData = async () => {
+      try {
+        const [eventsRes, explanationsRes] = await Promise.all([
+          axios.get(`${BASE_URL}/api/events`),
+          axios.get(`${BASE_URL}/api/explanations`),
+        ]);
+        setEvents(eventsRes.data);
+        setExplanations(explanationsRes.data);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
     };
-    fetchEvents();
+    fetchData();
   }, [BASE_URL]);
 
   const getEventsByDate = (date) =>
@@ -31,31 +40,46 @@ const CalendarView = () => {
   const getFeastExplanations = () => {
     const feastEvents = events.filter(
       (e) =>
-        dayjs(e.date).isSame(selectedMonth, "month") &&
-        isFeast(e.name)
+        dayjs(e.date).isSame(selectedMonth, "month") && isFeast(e.name)
     );
+
     if (feastEvents.length === 0) {
+      const sabbathInfo = explanations.find(
+        (e) => e.name.toLowerCase() === "sabbath"
+      );
+      if (!sabbathInfo) return <p>No explanation found for Sabbath.</p>;
+
       return (
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>No work</strong> – Exodus 20:10; Leviticus 23:3</li>
-          <li><strong>No kindling fire</strong> – Exodus 35:3</li>
-          <li><strong>No cooking/baking</strong> – Exodus 16:23</li>
-          <li><strong>No gathering food</strong> – Exodus 16:25-26</li>
-          <li><strong>No travel beyond limits</strong> – Exodus 16:29</li>
-          <li><strong>No burden-carrying</strong> – Jeremiah 17:21-22; Nehemiah 13:15-19</li>
-          <li><strong>No buying or selling</strong> – Nehemiah 10:31; 13:16-18</li>
-          <li><strong>No business or trading</strong> – Amos 8:5</li>
-          <li><strong>No fieldwork</strong> – Exodus 34:21</li>
-          <li><strong>No personal pleasure/seeking</strong> – Isaiah 58:13-14</li>
+          {sabbathInfo.restrictions.map((r, idx) => (
+            <li key={idx}><strong>{r}</strong></li>
+          ))}
         </ul>
       );
     }
-    return feastEvents.map((e) => (
-      <p key={e._id}>
-        <strong>{dayjs(e.date).format("YYYY-MM-DD")}: {e.name}</strong><br />
-        {e.description}
-      </p>
-    ));
+
+    return feastEvents.map((e) => {
+      const info = explanations.find(
+        (x) => x.name.toLowerCase() === e.name.toLowerCase()
+      );
+      return (
+        <div key={e._id} className="mb-3">
+          <p className="font-bold">{dayjs(e.date).format("YYYY-MM-DD")}: {e.name}</p>
+          <p><strong>Purpose:</strong> {info?.purpose || "—"}</p>
+          {info?.restrictions?.length > 0 && (
+            <>
+              <p><strong>Restrictions:</strong></p>
+              <ul className="list-disc pl-5">
+                {info.restrictions.map((r, idx) => <li key={idx}>{r}</li>)}
+              </ul>
+            </>
+          )}
+          {info?.customs && (
+            <p><strong>Customs:</strong> {info.customs}</p>
+          )}
+        </div>
+      );
+    });
   };
 
   const renderCells = (month) => {
@@ -118,25 +142,28 @@ const CalendarView = () => {
   const handleDownloadCalendar = async () => {
     try {
       setDownloading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/calendar/download`, {
-        method: 'GET',
-      });
-
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/calendar/download`);
       if (!response.ok) throw new Error('Failed to download calendar');
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
 
+      let filename = "calendar.zip";
+      const disposition = response.headers.get("Content-Disposition");
+      if (disposition && disposition.includes("filename=")) {
+        filename = disposition.split("filename=")[1].replace(/["']/g, "");
+      }
+
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = '';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading calendar:', error);
-      alert('Download failed. Please try again.');
+      alert("Download failed. Please try again.");
+      console.error("Error downloading calendar:", error);
     } finally {
       setDownloading(false);
     }
