@@ -44,19 +44,28 @@ const CalendarView = () => {
   const getEventsByDate = (date) =>
     events.filter((e) => dayjs(e.date).isSame(date, "day"));
 
-  const isFeast = (name) =>
-    /feast|passover|atonement|tabernacles|shavuot/i.test(name);
+  const isFeast = (text) =>
+    /feast|passover|atonement|tabernacles|shavuot|unleavened|trumpets/i.test(text);
+
+  const isFeastEvent = (e) => {
+    const check = (val) => typeof val === 'string' && isFeast(val.toLowerCase());
+    if (Array.isArray(e.description)) return e.description.some(check);
+    return check(e.name) || check(e.description);
+  };
+
+  const isSabbathEvent = (e) => {
+    const check = (val) => typeof val === 'string' && val.toLowerCase().includes("sabbath");
+    if (Array.isArray(e.description)) return e.description.some(check);
+    return check(e.description);
+  };
 
   const getFeastExplanations = () => {
     const feastEvents = events.filter(
-      (e) =>
-        dayjs(e.date).isSame(selectedMonth, "month") && isFeast(e.name)
+      (e) => dayjs(e.date).isSame(selectedMonth, "month") && isFeastEvent(e)
     );
 
     const sabbathEvents = events.filter(
-      (e) =>
-        dayjs(e.date).isSame(selectedMonth, "month") &&
-        e.description?.toLowerCase().includes("sabbath")
+      (e) => dayjs(e.date).isSame(selectedMonth, "month") && isSabbathEvent(e)
     );
 
     if (feastEvents.length === 0 && sabbathEvents.length > 0) {
@@ -110,13 +119,9 @@ const CalendarView = () => {
       const currentDate = month.startOf("month").add(i - startDay, "day");
       const isCurrentMonth = currentDate.month() === month.month();
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDate) : [];
-      const classNames = todayEvents.map((e) =>
-        e.description?.toLowerCase().includes("sabbath")
-          ? "sabbath"
-          : isFeast(e.name)
-          ? "feast"
-          : ""
-      );
+      const classNames = todayEvents.map((e) => {
+        return isSabbathEvent(e) ? "sabbath" : isFeastEvent(e) ? "feast" : "";
+      });
       const calculateEnochDay = (date) => {
         const lastEnochDay = events.find(e => e.name === "Day 364");
         const fallbackEquinox = (() => {
