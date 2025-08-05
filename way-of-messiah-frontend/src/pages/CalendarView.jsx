@@ -6,7 +6,6 @@ import "../assets/css/CalendarView.css";
 
 dayjs.extend(utc);
 
-
 const CalendarView = () => {
   const [springEquinox, setSpringEquinox] = useState(null);
   const [events, setEvents] = useState([]);
@@ -119,8 +118,17 @@ const CalendarView = () => {
           : ""
       );
       const calculateEnochDay = (date) => {
-        if (!springEquinox) return null;
-        const firstCycleStart = springEquinox.add(1, "day");
+        const lastEnochDay = events.find(e => e.name === "Day 364");
+        const fallbackEquinox = (() => {
+          const year = selectedMonth.year();
+          const beforeMarch20 = date.isBefore(dayjs(`${year}-03-20`));
+          if (beforeMarch20 && lastEnochDay) {
+            return dayjs(lastEnochDay.date).add(1, "day");
+          }
+          return dayjs(`${year - 1}-03-20`);
+        })();
+        const actualEquinox = springEquinox || fallbackEquinox;
+        const firstCycleStart = actualEquinox.add(1, "day");
         if (date.isBefore(firstCycleStart)) return null;
 
         const daysSinceFirst = date.diff(firstCycleStart, "day");
