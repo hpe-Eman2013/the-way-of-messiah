@@ -43,9 +43,15 @@ const CalendarView = () => {
         dayjs(e.date).isSame(selectedMonth, "month") && isFeast(e.name)
     );
 
-    if (feastEvents.length === 0) {
+    const sabbathEvents = events.filter(
+      (e) =>
+        dayjs(e.date).isSame(selectedMonth, "month") &&
+        e.description?.toLowerCase().includes("sabbath")
+    );
+
+    if (feastEvents.length === 0 && sabbathEvents.length > 0) {
       const sabbathInfo = explanations.find(
-  (e) => e.description?.toLowerCase().includes("sabbath")
+        (e) => e.description?.toLowerCase().includes("sabbath")
       );
       if (!sabbathInfo) return <p>No explanation found for Sabbath.</p>;
 
@@ -57,6 +63,8 @@ const CalendarView = () => {
         </ul>
       );
     }
+
+    if (feastEvents.length === 0) return null;
 
     return feastEvents.map((e) => {
       const info = explanations.find(
