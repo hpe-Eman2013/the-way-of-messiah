@@ -8,7 +8,6 @@ dayjs.extend(utc);
 import Header from "../components/Header";
 import "../assets/css/EventsPage.css";
 
-
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +43,7 @@ const EventsPage = () => {
   });
 
   const groupedEvents = filteredEvents.reduce((acc, event) => {
-    const key = dayjs(event.date).format("MMMM YYYY");
+    const key = dayjs.utc(event.date).local().format("MMMM YYYY");
     if (!acc[key]) acc[key] = [];
     acc[key].push(event);
     return acc;
@@ -123,7 +122,7 @@ const EventsPage = () => {
                 >
                   <h2 className="text-xl font-semibold">{event.name}</h2>
                   <p className="text-gray-600">
-                    📅 {dayjs(event.date).format("MMMM D, YYYY")} @ {event.time}
+                    🗓️ {dayjs(event.date).format("MMMM D, YYYY")} @ {event.time}
                   </p>
                   <p className="text-gray-600">📍 {event.location}</p>
                   <p className="mt-2">{event.description}</p>
