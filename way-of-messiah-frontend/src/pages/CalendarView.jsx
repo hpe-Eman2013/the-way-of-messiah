@@ -71,12 +71,7 @@ const CalendarView = () => {
 
     if (feastEvents.length === 0 && sabbathEvents.length > 0) {
       const sabbathInfo = explanations.find(
-        (e) => {
-          if (Array.isArray(e.description)) {
-            return e.description.some(d => d.toLowerCase().includes("sabbath"));
-          }
-          return typeof e.description === 'string' && e.description.toLowerCase().includes("sabbath");
-        }
+        (e) => e.name?.toLowerCase() === "sabbath"
       );
       if (!sabbathInfo) return <p>No explanation found for Sabbath.</p>;
 
@@ -91,17 +86,27 @@ const CalendarView = () => {
 
     if (feastEvents.length === 0) return null;
 
-    return feastEvents.map((e) => {
+    const uniqueFeasts = new Map();
+
+    feastEvents.forEach((e) => {
       const feastTag = Array.isArray(e.description)
         ? e.description.find(d => isFeast(d))
         : isFeast(e.description) ? e.description : null;
 
-      const info = explanations.find(
+      if (feastTag && !uniqueFeasts.has(feastTag.toLowerCase())) {
+        uniqueFeasts.set(feastTag.toLowerCase(), {
+          feastTag,
+          date: e.date,
+          info: explanations.find(
         (x) => feastTag && x.name.toLowerCase() === feastTag.toLowerCase()
-      );
-      return (
-        <div key={e._id} className="mb-3">
-          <p className="font-bold">{dayjs(e.date).format("YYYY-MM-DD")}: {feastTag}</p>
+          )
+        });
+      }
+    });
+
+    return Array.from(uniqueFeasts.values()).map(({ feastTag, date, info }) => (
+      <div key={feastTag} className="mb-3">
+        <p className="font-bold">{dayjs(date).format("YYYY-MM-DD")}: {feastTag}</p>
           <p><strong>Purpose:</strong> {info?.purpose || "—"}</p>
           {info?.restrictions?.length > 0 && (
             <>
@@ -115,8 +120,7 @@ const CalendarView = () => {
             <p><strong>Customs:</strong> {info.customs}</p>
           )}
         </div>
-      );
-    });
+    ));
   };
 
   const renderCells = (month) => {
@@ -143,7 +147,7 @@ const CalendarView = () => {
           return dayjs(`${year - 1}-03-20`);
         })();
         const actualEquinox = springEquinox || fallbackEquinox;
-        const firstCycleStart = actualEquinox.add(1, "day");
+        const firstCycleStart = actualEquinox;
         if (date.isBefore(firstCycleStart)) return null;
 
         const daysSinceFirst = date.diff(firstCycleStart, "day");
