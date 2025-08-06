@@ -149,7 +149,8 @@ const CalendarView = () => {
           }
           return dayjs(`${year - 1}-03-20`);
         })();
-        const actualEquinox = springEquinox || fallbackEquinox;
+        const actualEquinox = springEquinox ? dayjs(springEquinox).add(1, "day") : fallbackEquinox.add(1, "day");
+
         const firstCycleStart = actualEquinox;
         if (date.isBefore(firstCycleStart)) return null;
 
