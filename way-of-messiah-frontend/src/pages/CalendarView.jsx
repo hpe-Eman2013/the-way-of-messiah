@@ -24,13 +24,12 @@ const CalendarView = () => {
         console.error("Error fetching spring equinox:", err);
       }
     };
-    fetchEquinox();
 
     const fetchData = async () => {
       try {
         const [eventsRes, explanationsRes] = await Promise.all([
           axios.get(`${BASE_URL}/api/events`),
-          axios.get(`${BASE_URL}/api/explanations`),
+          axios.get(`${BASE_URL}/api/explanations`)
         ]);
         setEvents(eventsRes.data);
         setExplanations(explanationsRes.data);
@@ -38,6 +37,8 @@ const CalendarView = () => {
         console.error("Error fetching data:", err);
       }
     };
+
+    fetchEquinox();
     fetchData();
   }, [BASE_URL]);
 
@@ -91,11 +92,11 @@ const CalendarView = () => {
         : isFeast(e.description) ? e.description : null;
 
       const info = explanations.find(
-        (x) => x.name.toLowerCase() === feastTag?.toLowerCase()
+        (x) => feastTag && x.name.toLowerCase() === feastTag.toLowerCase()
       );
       return (
         <div key={e._id} className="mb-3">
-          <p className="font-bold">{dayjs(e.date).format("YYYY-MM-DD")}: {e.name}</p>
+          <p className="font-bold">{dayjs(e.date).format("YYYY-MM-DD")}: {feastTag}</p>
           <p><strong>Purpose:</strong> {info?.purpose || "—"}</p>
           {info?.restrictions?.length > 0 && (
             <>
@@ -154,7 +155,6 @@ const CalendarView = () => {
           {isCurrentMonth && (
             <>
               <div className="font-bold text-sm">{currentDate.format("MMM D")}</div>
-              {enochDay !== null && <div className="text-xs text-gray-600">Day {enochDay}</div>}
               {todayEvents.map((event) => (
                 <div key={event._id} className="text-xs mt-1">
                   <strong>{event.name}</strong>
