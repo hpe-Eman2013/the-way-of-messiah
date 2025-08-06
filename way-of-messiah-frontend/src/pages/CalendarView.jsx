@@ -40,7 +40,7 @@ const CalendarView = () => {
 
     fetchEquinox();
     fetchData();
-  }, [BASE_URL]);
+  }, [BASE_URL, selectedMonth]);
  
   const getEventsByDate = (date) =>
     events.filter((e) => dayjs(e.date).isSame(date, "day"));
@@ -93,12 +93,14 @@ const CalendarView = () => {
         ? e.description.find(d => isFeast(d))
         : isFeast(e.description) ? e.description : null;
 
-      if (feastTag && !uniqueFeasts.has(feastTag.toLowerCase())) {
-        uniqueFeasts.set(feastTag.toLowerCase(), {
+      const normalizedTag = feastTag?.replace(/\s+(Start|End)$/i, "").toLowerCase();
+
+      if (normalizedTag && !uniqueFeasts.has(normalizedTag)) {
+        uniqueFeasts.set(normalizedTag, {
           feastTag,
           date: e.date,
           info: explanations.find(
-        (x) => feastTag && x.name.toLowerCase() === feastTag.toLowerCase()
+            (x) => x.name.toLowerCase() === normalizedTag
           )
         });
       }
@@ -136,6 +138,7 @@ const CalendarView = () => {
       const classNames = todayEvents.map((e) => {
         return isSabbathEvent(e) ? "sabbath" : isFeastEvent(e) ? "feast" : "";
       });
+
       const calculateEnochDay = (date) => {
         const lastEnochDay = events.find(e => e.name === "Day 364");
         const fallbackEquinox = (() => {
@@ -164,6 +167,7 @@ const CalendarView = () => {
           {isCurrentMonth && (
             <>
               <div className="font-bold text-sm">{currentDate.format("MMM D")}</div>
+              {enochDay && <div className="text-xs font-bold">Day {enochDay}</div>}
               {todayEvents.map((event) => (
                 <div key={event._id} className="text-xs mt-1">
                   <strong>{event.name}</strong>
@@ -196,7 +200,7 @@ const CalendarView = () => {
       let filename = "calendar.zip";
       const disposition = response.headers.get("Content-Disposition");
       if (disposition && disposition.includes("filename=")) {
-        filename = disposition.split("filename=")[1].replace(/["']/g, "");
+        filename = disposition.split("filename=")[1].replace(/["]+/g, "");
       }
 
       const url = window.URL.createObjectURL(blob);
