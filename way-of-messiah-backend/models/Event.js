@@ -5,7 +5,7 @@ const eventSchema = new mongoose.Schema({
   date: Date, // << THIS MUST BE Date — not String
   time: String,
   location: String,
-  description: String,
+  description: [String], // ✅ Make description an array
   link: String,
 }, { timestamps: true });
 
