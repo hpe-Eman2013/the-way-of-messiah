@@ -131,8 +131,10 @@ const CalendarView = () => {
     const daysInMonth = month.daysInMonth();
     const totalCells = startDay + daysInMonth > 35 ? 42 : 35;
 
+    const gridStartDate = month.startOf("month").subtract(startDay, "day");
+    
     for (let i = 0; i < totalCells; i++) {
-      const currentDate = month.startOf("month").add(i - startDay, "day");
+      const currentDate = gridStartDate.add(i, "day");
       const isCurrentMonth = currentDate.month() === month.month();
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDate) : [];
       const classNames = todayEvents.map((e) => {
@@ -149,8 +151,7 @@ const CalendarView = () => {
           }
           return dayjs(`${year - 1}-03-20`);
         })();
-        const actualEquinox = springEquinox ? dayjs(springEquinox).add(1, "day") : fallbackEquinox.add(1, "day");
-
+        const actualEquinox = springEquinox || fallbackEquinox;
         const firstCycleStart = actualEquinox;
         if (date.isBefore(firstCycleStart)) return null;
 
@@ -170,9 +171,9 @@ const CalendarView = () => {
               <div className="font-bold text-sm">{currentDate.format("MMM D")}</div>
               {enochDay && <div className="text-xs font-bold">Day {enochDay}</div>}
               {todayEvents.map((event) => (
-                <div key={event._id} className="text-xs mt-1">
-                  <strong>{event.name}</strong>
-                </div>
+                  <div key={event._id} className="text-xs mt-1">
+                    <strong>{event.name}</strong>
+                  </div>
               ))}
             </>
           )}
@@ -201,7 +202,7 @@ const CalendarView = () => {
       let filename = "calendar.zip";
       const disposition = response.headers.get("Content-Disposition");
       if (disposition && disposition.includes("filename=")) {
-        filename = disposition.split("filename=")[1].replace(/["]+/g, "");
+        filename = disposition.split("filename=")[1].replace(/["']+/g, "");
       }
 
       const url = window.URL.createObjectURL(blob);
