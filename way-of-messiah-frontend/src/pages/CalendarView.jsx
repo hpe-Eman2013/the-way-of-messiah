@@ -42,7 +42,10 @@ const CalendarView = () => {
     fetchData();
   }, [BASE_URL, selectedMonth]);
  
-  const getEventsByDate = (date) => events.filter((e) => dayjs(e.date).isSame(date, "day"));
+  const getEventsByDate = (date) => {
+    const dayStr = dayjs(date).format("YYYY-MM-DD");
+    return events.filter((e) => dayjs.utc(e.date).format("YYYY-MM-DD") === dayStr);
+  };
   const isFeast = (text) => /feast|passover|atonement|tabernacles|shavuot|unleavened|trumpets/i.test(text);
   const isFeastEvent = (e) => {
     const check = (val) => typeof val === 'string' && isFeast(val.toLowerCase());
@@ -56,8 +59,17 @@ const CalendarView = () => {
   };
 
   const getFeastExplanations = () => {
-    const feastEvents = events.filter((e) => dayjs(e.date).isSame(selectedMonth, "month") && isFeastEvent(e));
-    const sabbathEvents = events.filter((e) => dayjs(e.date).isSame(selectedMonth, "month") && isSabbathEvent(e));
+    const feastEvents = events.filter(
+      (e) =>
+        dayjs.utc(e.date).format("YYYY-MM") === dayjs(selectedMonth).format("YYYY-MM") &&
+        isFeastEvent(e)
+    );
+
+    const sabbathEvents = events.filter(
+      (e) =>
+        dayjs.utc(e.date).format("YYYY-MM") === dayjs(selectedMonth).format("YYYY-MM") &&
+        isSabbathEvent(e)
+    );
     if (feastEvents.length === 0 && sabbathEvents.length > 0) {
       const sabbathInfo = explanations.find((e) => e.name?.toLowerCase() === "sabbath");
       if (!sabbathInfo) return <p>No explanation found for Sabbath.</p>;
