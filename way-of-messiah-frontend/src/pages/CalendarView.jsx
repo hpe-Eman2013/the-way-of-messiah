@@ -18,9 +18,8 @@ const CalendarView = () => {
     const fetchEquinox = async () => {
       try {
         const year = selectedMonth.year();
-        const res = await axios.get(BASE_URL + "/api/equinox?year=" + year);
-        // Store as UTC midnight to avoid TZ off-by-one
-        setSpringEquinox(dayjs.utc(res.data.springEquinox).startOf("day"));
+        const res = await axios.get(`${BASE_URL}/api/equinox?year=${year}`);
+        setSpringEquinox(dayjs.utc(res.data.springEquinox));
       } catch (err) {
         console.error("Error fetching spring equinox:", err);
       }
@@ -29,8 +28,8 @@ const CalendarView = () => {
     const fetchData = async () => {
       try {
         const [eventsRes, explanationsRes] = await Promise.all([
-          axios.get(BASE_URL + "/api/events"),
-          axios.get(BASE_URL + "/api/explanations")
+          axios.get(`${BASE_URL}/api/events`),
+          axios.get(`${BASE_URL}/api/explanations`)
         ]);
         setEvents(eventsRes.data);
         setExplanations(explanationsRes.data);
@@ -43,20 +42,13 @@ const CalendarView = () => {
     fetchData();
   }, [BASE_URL, selectedMonth]);
  
-  const getEventsByDate = (date) => {
-    const dUtc = dayjs.utc(date.format("YYYY-MM-DD"));
-    return events.filter((e) => dayjs.utc(e.date).isSame(dUtc, "day"));
-  };
-
-  const isFeast = (text) =>
-    /feast|passover|atonement|tabernacles|shavuot|unleavened|trumpets/i.test(text);
-
+  const getEventsByDate = (date) => events.filter((e) => dayjs(e.date).isSame(date, "day"));
+  const isFeast = (text) => /feast|passover|atonement|tabernacles|shavuot|unleavened|trumpets/i.test(text);
   const isFeastEvent = (e) => {
     const check = (val) => typeof val === 'string' && isFeast(val.toLowerCase());
     if (Array.isArray(e.description)) return e.description.some(check);
     return check(e.name) || check(e.description);
   };
-
   const isSabbathEvent = (e) => {
     const check = (val) => typeof val === 'string' && val.toLowerCase().includes("sabbath");
     if (Array.isArray(e.description)) return e.description.some(check);
@@ -64,66 +56,44 @@ const CalendarView = () => {
   };
 
   const getFeastExplanations = () => {
-    const feastEvents = events.filter(
-      (e) => dayjs(e.date).isSame(selectedMonth, "month") && isFeastEvent(e)
-    );
-
-    const sabbathEvents = events.filter(
-      (e) => dayjs(e.date).isSame(selectedMonth, "month") && isSabbathEvent(e)
-    );
-
+    const feastEvents = events.filter((e) => dayjs(e.date).isSame(selectedMonth, "month") && isFeastEvent(e));
+    const sabbathEvents = events.filter((e) => dayjs(e.date).isSame(selectedMonth, "month") && isSabbathEvent(e));
     if (feastEvents.length === 0 && sabbathEvents.length > 0) {
-      const sabbathInfo = explanations.find(
-        (e) => e.name?.toLowerCase() === "sabbath"
-      );
+      const sabbathInfo = explanations.find((e) => e.name?.toLowerCase() === "sabbath");
       if (!sabbathInfo) return <p>No explanation found for Sabbath.</p>;
-
       return (
-        <ul className="list-disc pl-5 space-y-1">
-          {sabbathInfo.restrictions.map((r, idx) => (
-            <li key={idx}><strong>{r}</strong></li>
-          ))}
-        </ul>
+        <div>
+          <p><strong>Purpose:</strong> {sabbathInfo.purpose}</p>
+          <p><strong>Length:</strong> {sabbathInfo.length}</p>
+          <p><strong>Restrictions:</strong> {sabbathInfo.restrictions.join(", ")}</p>
+          <p><strong>When Observed:</strong> {sabbathInfo.whenObserved}</p>
+          <p><strong>Who it was binding on:</strong> {sabbathInfo.whoItWasBindingOn}</p>
+          <p><strong>Customs:</strong> {sabbathInfo.customs}</p>
+        </div>
       );
     }
-
     if (feastEvents.length === 0) return null;
-
     const uniqueFeasts = new Map();
-
     feastEvents.forEach((e) => {
-      const feastTag = Array.isArray(e.description)
-        ? e.description.find(d => isFeast(d))
-        : isFeast(e.description) ? e.description : null;
-
+      const feastTag = Array.isArray(e.description) ? e.description.find(d => isFeast(d)) : isFeast(e.description) ? e.description : null;
       const normalizedTag = feastTag?.replace(/\s+(Start|End)$/i, "").toLowerCase();
-
       if (normalizedTag && !uniqueFeasts.has(normalizedTag)) {
         uniqueFeasts.set(normalizedTag, {
           feastTag,
           date: e.date,
-          info: explanations.find(
-            (x) => x.name.toLowerCase() === normalizedTag
-          )
+          info: explanations.find((x) => x.name.toLowerCase() === normalizedTag)
         });
       }
     });
-
     return Array.from(uniqueFeasts.values()).map(({ feastTag, date, info }) => (
       <div key={feastTag} className="mb-3">
         <p className="font-bold">{dayjs(date).format("YYYY-MM-DD")}: {feastTag}</p>
           <p><strong>Purpose:</strong> {info?.purpose || "—"}</p>
-          {info?.restrictions?.length > 0 && (
-            <>
-              <p><strong>Restrictions:</strong></p>
-              <ul className="list-disc pl-5">
-                {info.restrictions.map((r, idx) => <li key={idx}>{r}</li>)}
-              </ul>
-            </>
-          )}
-          {info?.customs && (
-            <p><strong>Customs:</strong> {info.customs}</p>
-          )}
+        <p><strong>Length:</strong> {info?.length || "—"}</p>
+        <p><strong>Restrictions:</strong> {info?.restrictions?.join(", ") || "—"}</p>
+        <p><strong>When Observed:</strong> {info?.whenObserved || "—"}</p>
+        <p><strong>Who it was binding on:</strong> {info?.whoItWasBindingOn || "—"}</p>
+        <p><strong>Customs:</strong> {info?.customs || "—"}</p>
         </div>
     ));
   };
@@ -133,41 +103,30 @@ const CalendarView = () => {
     const startDay = month.startOf("month").day();
     const daysInMonth = month.daysInMonth();
     const totalCells = startDay + daysInMonth > 35 ? 42 : 35;
-
-    const gridStartDate = month.startOf("month").subtract(startDay, "day");
-
     for (let i = 0; i < totalCells; i++) {
-      const currentDate = gridStartDate.add(i, "day");
-      const currentDateUtc = dayjs.utc(currentDate.format("YYYY-MM-DD"));
+      const currentDate = month.startOf("month").add(i - startDay, "day");
       const isCurrentMonth = currentDate.month() === month.month();
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDate) : [];
-      const classNames = todayEvents.map((e) => {
-        return isSabbathEvent(e) ? "sabbath" : isFeastEvent(e) ? "feast" : "";
-      });
-
-      const calculateEnochDay = (dateUtc) => {
+      const classNames = todayEvents.map((e) => isSabbathEvent(e) ? "sabbath" : isFeastEvent(e) ? "feast" : "");
+      const calculateEnochDay = (date) => {
         const lastEnochDay = events.find(e => e.name === "Day 364");
         const fallbackEquinox = (() => {
           const year = selectedMonth.year();
-          const beforeMarch20 = dateUtc.isBefore(dayjs.utc(year + "-03-20"));
+          const beforeMarch20 = date.isBefore(dayjs(`${year}-03-20`));
           if (beforeMarch20 && lastEnochDay) {
-            return dayjs.utc(lastEnochDay.date).add(1, "day").startOf("day");
+            return dayjs(lastEnochDay.date).add(1, "day");
           }
-          return dayjs.utc((year - 1) + "-03-20").startOf("day");
+          return dayjs(`${year - 1}-03-20`);
         })();
-        const eq = springEquinox ? springEquinox : fallbackEquinox; // both UTC startOf day
-        const firstCycleStart = eq.add(1, "day").startOf("day"); // Day 1 is day after equinox
-        if (dateUtc.isBefore(firstCycleStart)) return null;
-
-        const daysSinceFirst = dateUtc.diff(firstCycleStart, "day");
+        const actualEquinox = springEquinox ? dayjs(springEquinox).add(1, "day") : fallbackEquinox.add(1, "day");
+        const firstCycleStart = actualEquinox;
+        if (date.isBefore(firstCycleStart)) return null;
+        const daysSinceFirst = date.diff(firstCycleStart, "day");
         const currentCycleStart = firstCycleStart.add(Math.floor(daysSinceFirst / 364) * 364, "day");
-        const enochDay = dateUtc.diff(currentCycleStart, "day") + 1;
-
+        const enochDay = date.diff(currentCycleStart, "day") + 1;
         return enochDay > 364 ? null : enochDay;
       };
-
-      const enochDay = calculateEnochDay(currentDateUtc);
-
+      const enochDay = calculateEnochDay(currentDate);
       cells.push(
         <div key={i} className={`day ${classNames.join(" ")}`}>
           {isCurrentMonth && (
@@ -182,7 +141,6 @@ const CalendarView = () => {
                   </div>
                 ) : null;
               })}
-
             </>
           )}
         </div>
@@ -191,76 +149,12 @@ const CalendarView = () => {
     return cells;
   };
 
-  const goToPreviousMonth = () => {
-    setSelectedMonth((prev) => prev.subtract(1, "month"));
-  };
-
-  const goToNextMonth = () => {
-    setSelectedMonth((prev) => prev.add(1, "month"));
-  };
-
-  const handleDownloadCalendar = async () => {
-    try {
-      setDownloading(true);
-      const response = await fetch(BASE_URL + "/calendar/download");
-      if (!response.ok) throw new Error('Failed to download calendar');
-
-      const blob = await response.blob();
-
-      let filename = "calendar.zip";
-      const disposition = response.headers.get("Content-Disposition");
-      if (disposition && disposition.includes("filename=")) {
-        filename = disposition.split("filename=")[1].replace(/["']+/g, "");
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      alert("Download failed. Please try again.");
-      console.error("Error downloading calendar:", error);
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-100 text-black p-4">
-      <h1 className="calendar-view-title text-2xl font-bold">
-        CONSECRATED DAYS OF YAHUAH
-      </h1>
-      <h2 className="calendar-view-title text-xl font-semibold mb-2">
-        {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
-      </h2>
-
-      <div className="flex justify-center items-center gap-3 mb-4 flex-wrap">
-        <button onClick={goToPreviousMonth} className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded">
-          ← Prev
-        </button>
-        <button onClick={goToNextMonth} className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded">
-          Next →
-        </button>
-        <button onClick={handleDownloadCalendar} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2">
-          {downloading ? (
-            <span className="loader inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          ) : null}
-          {downloading ? 'Downloading...' : 'Download Calendar (.zip)'}
-        </button>
-      </div>
-
-      <div className="calendar-header">
-        {"Sun Mon Tue Wed Thu Fri Sat".split(" ").map((d) => (
-          <div key={d}>{d}</div>
-        ))}
-      </div>
-
+      <h1 className="calendar-view-title text-2xl font-bold">CONSECRATED DAYS OF YAHUAH</h1>
+      <h2 className="calendar-view-title text-xl font-semibold mb-2">{selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar</h2>
+      <div className="calendar-header">{"Sun Mon Tue Wed Thu Fri Sat".split(" ").map((d) => (<div key={d}>{d}</div>))}</div>
       <div className="calendar-grid">{renderCells(selectedMonth)}</div>
-
       <div className="notes max-w-4xl mx-auto mt-4 bg-white p-4 border border-gray-300">
         <h3 className="text-lg font-semibold mb-2 text-center">Explanations for Set-Apart Days</h3>
         {getFeastExplanations()}
