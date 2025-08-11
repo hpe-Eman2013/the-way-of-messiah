@@ -18,8 +18,9 @@ const CalendarView = () => {
     const fetchEquinox = async () => {
       try {
         const year = selectedMonth.year();
-        const res = await axios.get(`${BASE_URL}/api/equinox?year=${year}`);
-        setSpringEquinox(dayjs.utc(res.data.springEquinox));
+        const res = await axios.get(BASE_URL + "/api/equinox?year=" + year);
+        // Store as UTC midnight to avoid TZ off-by-one
+        setSpringEquinox(dayjs.utc(res.data.springEquinox).startOf("day"));
       } catch (err) {
         console.error("Error fetching spring equinox:", err);
       }
@@ -28,8 +29,8 @@ const CalendarView = () => {
     const fetchData = async () => {
       try {
         const [eventsRes, explanationsRes] = await Promise.all([
-          axios.get(`${BASE_URL}/api/events`),
-          axios.get(`${BASE_URL}/api/explanations`)
+          axios.get(BASE_URL + "/api/events"),
+          axios.get(BASE_URL + "/api/explanations")
         ]);
         setEvents(eventsRes.data);
         setExplanations(explanationsRes.data);
@@ -42,8 +43,10 @@ const CalendarView = () => {
     fetchData();
   }, [BASE_URL, selectedMonth]);
  
-  const getEventsByDate = (date) =>
-    events.filter((e) => dayjs(e.date).isSame(date, "day"));
+  const getEventsByDate = (date) => {
+    const dUtc = dayjs.utc(date.format("YYYY-MM-DD"));
+    return events.filter((e) => dayjs.utc(e.date).isSame(dUtc, "day"));
+  };
 
   const isFeast = (text) =>
     /feast|passover|atonement|tabernacles|shavuot|unleavened|trumpets/i.test(text);
@@ -132,37 +135,38 @@ const CalendarView = () => {
     const totalCells = startDay + daysInMonth > 35 ? 42 : 35;
 
     const gridStartDate = month.startOf("month").subtract(startDay, "day");
-    
+
     for (let i = 0; i < totalCells; i++) {
       const currentDate = gridStartDate.add(i, "day");
+      const currentDateUtc = dayjs.utc(currentDate.format("YYYY-MM-DD"));
       const isCurrentMonth = currentDate.month() === month.month();
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDate) : [];
       const classNames = todayEvents.map((e) => {
         return isSabbathEvent(e) ? "sabbath" : isFeastEvent(e) ? "feast" : "";
       });
 
-      const calculateEnochDay = (date) => {
+      const calculateEnochDay = (dateUtc) => {
         const lastEnochDay = events.find(e => e.name === "Day 364");
         const fallbackEquinox = (() => {
           const year = selectedMonth.year();
-          const beforeMarch20 = date.isBefore(dayjs(`${year}-03-20`));
+          const beforeMarch20 = dateUtc.isBefore(dayjs.utc(year + "-03-20"));
           if (beforeMarch20 && lastEnochDay) {
-            return dayjs(lastEnochDay.date).add(1, "day");
+            return dayjs.utc(lastEnochDay.date).add(1, "day").startOf("day");
           }
-          return dayjs(`${year - 1}-03-20`);
+          return dayjs.utc((year - 1) + "-03-20").startOf("day");
         })();
-        const actualEquinox = springEquinox || fallbackEquinox;
-        const firstCycleStart = actualEquinox;
-        if (date.isBefore(firstCycleStart)) return null;
+        const eq = springEquinox ? springEquinox : fallbackEquinox; // both UTC startOf day
+        const firstCycleStart = eq.add(1, "day").startOf("day"); // Day 1 is day after equinox
+        if (dateUtc.isBefore(firstCycleStart)) return null;
 
-        const daysSinceFirst = date.diff(firstCycleStart, "day");
+        const daysSinceFirst = dateUtc.diff(firstCycleStart, "day");
         const currentCycleStart = firstCycleStart.add(Math.floor(daysSinceFirst / 364) * 364, "day");
-        const enochDay = date.diff(currentCycleStart, "day") + 1;
+        const enochDay = dateUtc.diff(currentCycleStart, "day") + 1;
 
         return enochDay > 364 ? null : enochDay;
       };
 
-      const enochDay = calculateEnochDay(currentDate);
+      const enochDay = calculateEnochDay(currentDateUtc);
 
       cells.push(
         <div key={i} className={`day ${classNames.join(" ")}`}>
@@ -170,11 +174,15 @@ const CalendarView = () => {
             <>
               <div className="font-bold text-sm">{currentDate.format("MMM D")}</div>
               {enochDay && <div className="text-xs font-bold">Day {enochDay}</div>}
-              {todayEvents.map((event) => (
+              {todayEvents.map((event) => {
+                const isDayLabel = /^Day\s\d{1,3}$/i.test(event.name);
+                return !isDayLabel ? (
                   <div key={event._id} className="text-xs mt-1">
                     <strong>{event.name}</strong>
                   </div>
-              ))}
+                ) : null;
+              })}
+
             </>
           )}
         </div>
@@ -194,7 +202,7 @@ const CalendarView = () => {
   const handleDownloadCalendar = async () => {
     try {
       setDownloading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/calendar/download`);
+      const response = await fetch(BASE_URL + "/calendar/download");
       if (!response.ok) throw new Error('Failed to download calendar');
 
       const blob = await response.blob();
