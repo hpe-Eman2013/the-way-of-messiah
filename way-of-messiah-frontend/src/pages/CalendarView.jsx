@@ -46,8 +46,11 @@ const CalendarView = () => {
   }, [BASE_URL, selectedMonth]);
  
   // Helpers
-  const getEventsByDate = (date) =>
-    events.filter((e) => dayjs.utc(e.date).local().isSame(date, "day"));
+  // Compare in UTC to avoid TZ shifting a day earlier
+  const getEventsByDate = (dateLocal) => {
+    const dateUTC = dayjs.utc(dateLocal.format("YYYY-MM-DD"));
+    return events.filter((e) => dayjs.utc(e.date).isSame(dateUTC, "day"));
+  };
 
   const isFeast = (text) =>
     /feast|passover|atonement|tabernacles|shavuot|unleavened|trumpets/i.test(text);
@@ -66,11 +69,10 @@ const CalendarView = () => {
 
   const getFeastExplanations = () => {
     const feastEvents = events.filter(
-      (e) => dayjs.utc(e.date).local().isSame(selectedMonth, "month") && isFeastEvent(e)
+      (e) => dayjs.utc(e.date).isSame(dayjs.utc(selectedMonth.format("YYYY-MM-01")), "month") && isFeastEvent(e)
     );
-
     const sabbathEvents = events.filter(
-      (e) => dayjs.utc(e.date).local().isSame(selectedMonth, "month") && isSabbathEvent(e)
+      (e) => dayjs.utc(e.date).isSame(dayjs.utc(selectedMonth.format("YYYY-MM-01")), "month") && isSabbathEvent(e)
     );
 
     if (feastEvents.length === 0 && sabbathEvents.length > 0) {
@@ -144,35 +146,37 @@ const CalendarView = () => {
     const totalCells = startDay + daysInMonth > 35 ? 42 : 35;
 
     for (let i = 0; i < totalCells; i++) {
-      const currentDate = month.startOf("month").add(i - startDay, "day");
-      const isCurrentMonth = currentDate.month() === month.month();
-      const todayEvents = isCurrentMonth ? getEventsByDate(currentDate) : [];
+    const currentDateLocal = month.startOf("month").add(i - startDay, "day");
+    const isCurrentMonth = currentDateLocal.month() === month.month();
 
-      // Figure out Enoch day so we can also use it for Sabbath highlighting if needed
-      const calculateEnochDay = (date) => {
+    // Use UTC for logic; local only for labels
+    const currentDateUTC = dayjs.utc(currentDateLocal.format("YYYY-MM-DD"));
+
+    const todayEvents = isCurrentMonth ? getEventsByDate(currentDateLocal) : [];
+
+    const calculateEnochDay = (dateUTC) => {
         const lastEnochDay = events.find((e) => e.name === "Day 364");
         const fallbackEquinox = (() => {
           const year = selectedMonth.year();
-          const beforeMarch20 = date.isBefore(dayjs(`${year}-03-20`));
+        const beforeMarch20 = dateUTC.isBefore(dayjs.utc(`${year}-03-20`));
           if (beforeMarch20 && lastEnochDay) {
-            return dayjs.utc(lastEnochDay.date).local().add(1, "day");
+          return dayjs.utc(lastEnochDay.date).add(1, "day");
           }
-          return dayjs(`${year - 1}-03-20`);
+        return dayjs.utc(`${year - 1}-03-20`);
         })();
 
-        const actualEquinox = springEquinox ? dayjs(springEquinox) : fallbackEquinox;
+      const actualEquinox = springEquinox ? dayjs.utc(springEquinox) : fallbackEquinox;
         const firstCycleStart = actualEquinox.add(1, "day"); // Day 1 = day after equinox
-        if (date.isBefore(firstCycleStart)) return null;
+      if (dateUTC.isBefore(firstCycleStart)) return null;
 
-        const daysSinceFirst = date.diff(firstCycleStart, "day");
+      const daysSinceFirst = dateUTC.diff(firstCycleStart, "day");
         const currentCycleStart = firstCycleStart.add(Math.floor(daysSinceFirst / 364) * 364, "day");
-        const enochDay = date.diff(currentCycleStart, "day") + 1;
+      const enochDay = dateUTC.diff(currentCycleStart, "day") + 1;
         return enochDay > 364 ? null : enochDay;
       };
 
-      const enochDay = calculateEnochDay(currentDate);
+    const enochDay = calculateEnochDay(currentDateUTC);
 
-      // Classes: 1) Sabbath if description says so; 2) feast if description matches feasts
       const classNames = [];
       if (todayEvents.some((e) => isSabbathEvent(e))) classNames.push("sabbath");
       if (todayEvents.some((e) => isFeastEvent(e))) classNames.push("feast");
@@ -181,13 +185,15 @@ const CalendarView = () => {
         <div key={i} className={`day ${classNames.join(" ")}`}>
           {isCurrentMonth && (
             <>
-              <div className="font-bold text-sm">{currentDate.format("MMM D")}</div>
+            {/* Local for visual label */}
+            <div className="font-bold text-sm">{currentDateLocal.format("MMM D")}</div>
               {enochDay && <div className="text-xs font-bold">Day {enochDay}</div>}
               {todayEvents.map((event) => {
                 const isDayLabel = /^Day\s\d{1,3}$/i.test(event.name);
                 return !isDayLabel ? (
                   <div key={event._id} className="text-xs mt-1">
-                    <strong>{Array.isArray(event.description) && event.description.length > 0
+                  <strong>
+                    {Array.isArray(event.description) && event.description.length > 0
                       ? event.description.join(", ")
                       : event.name}
                     </strong>
@@ -201,6 +207,7 @@ const CalendarView = () => {
     }
     return cells;
   };
+
 
   // Paging controls
   const goToPreviousMonth = () => {
