@@ -11,6 +11,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import EventsPage from "./pages/EventsPage";
 import AdminEventForm from "./pages/AdminEventForm";
 import CalendarView from './pages/CalendarView';
+import DonatePage from './pages/DonatePage.jsx'; 
 // Inside <Routes>:
 
 
@@ -31,6 +32,7 @@ function App() {
         <Route path="/testimonies" element={<Testimonies />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/calendar-view" element={<CalendarView />} />
+        <Route path="/donate" element={<DonatePage />} />
       </Routes>
     </BrowserRouter>
   );
