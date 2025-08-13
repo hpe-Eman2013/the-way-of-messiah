@@ -24,6 +24,8 @@ const CalendarView = () => {
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [panelReady, setPanelReady] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  // Toggle this flag to enable/disable the Download button globally
+  const DOWNLOAD_ENABLED = false;
   const BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -224,13 +226,16 @@ const CalendarView = () => {
             Next →
           </button>
           <button
-            onClick={handleDownloadCalendar}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2"
+            onClick={DOWNLOAD_ENABLED ? handleDownloadCalendar : undefined}
+            disabled={!DOWNLOAD_ENABLED || downloading}
+            aria-disabled={!DOWNLOAD_ENABLED}
+            title={DOWNLOAD_ENABLED ? "" : "Download coming soon"}
+            className={`px-4 py-2 rounded flex items-center gap-2 text-white ${DOWNLOAD_ENABLED ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed opacity-60"}`}
           >
             {downloading ? (
               <span className="loader inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : null}
-            {downloading ? "Downloading..." : "Download Calendar (.zip)"}
+            {DOWNLOAD_ENABLED ? (downloading ? "Downloading..." : "Download Calendar (.zip)") : "Download (coming soon)"}
           </button>
         </div>
       )}
