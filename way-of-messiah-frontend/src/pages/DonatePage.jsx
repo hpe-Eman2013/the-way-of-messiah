@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export default function DonatePage() {
   const BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "";
@@ -11,6 +11,20 @@ export default function DonatePage() {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // --- Success / Canceled banners via query params ---
+  const params = new URLSearchParams(window.location.search);
+  const success = params.get("success") === "1";
+  const canceled = params.get("canceled") === "1";
+
+  // Optionally clear the query after showing a message
+  useEffect(() => {
+    if (success || canceled) {
+      const url = new URL(window.location.href);
+      url.search = "";
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [success, canceled]);
 
   const finalAmount = useMemo(() => {
     const c = Number(custom);
@@ -53,9 +67,8 @@ export default function DonatePage() {
 
       if (data.url) {
         window.location.href = data.url; // Stripe Checkout URL
-      } else if (data.sessionId) {
-        // Fallback if you prefer redirectToCheckout
-        window.location.href = data.sessionUrl;
+      } else if (data.sessionUrl) {
+        window.location.href = data.sessionUrl; // alt shape if your API returns sessionUrl
       } else {
         throw new Error("Unexpected response from server");
       }
@@ -72,6 +85,18 @@ export default function DonatePage() {
       <p className="text-gray-700 mb-6">
         Your gift helps us keep teaching, building tools like the Enoch calendar, and sharing Yahuah's ways. Thank you!
       </p>
+
+      {/* Success / Canceled banners */}
+      {success && (
+        <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-700 p-3">
+          Thank you! Your <strong>test</strong> donation succeeded.
+        </div>
+      )}
+      {canceled && (
+        <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 p-3">
+          Checkout was canceled — you were not charged.
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="space-y-5 bg-white p-5 rounded-2xl shadow">
         {/* Amount presets */}
@@ -134,7 +159,7 @@ export default function DonatePage() {
           disabled={loading}
           className={`w-full py-3 rounded-xl text-white ${loading ? 'bg-gray-400' : 'bg-emerald-600 hover:bg-emerald-700'}`}
         >
-          {loading ? 'Preparing secure checkout…' : (monthly ? `Give $${finalAmount} / month` : `Give $${finalAmount} now`)}
+          {loading ? 'Preparing secure checkout…' : (monthly ? `Give $${finalAmount.toFixed(2)} / month` : `Give $${finalAmount.toFixed(2)} now`)}
         </button>
 
         <p className="text-xs text-gray-500 mt-2">Payments are processed securely by Stripe. Apple Pay & Google Pay supported where available.</p>
