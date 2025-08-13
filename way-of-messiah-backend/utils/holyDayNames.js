@@ -10,8 +10,8 @@ const NAME_ALIASES = {
   'feast of trumpets (yom teruah)': ['feast of trumpets', 'yom teruah'],
   'day of atonement (yom haKippurim)': ['day of atonement', 'yom haKippurim', 'yom kippur'],
   'feast of tabernacles (sukkot)': [
-  'feast of tabernacles','tabernacles','sukkot','sukkoth','sukkos','booths',
-  'the eighth day','last great day'
+  'feast of tabernacles', 'tabernacles', 'sukkot', 'sukkoth', 'sukkos', 'booths',
+  'the eighth day', 'last great day', 'shemini atzeret'
 ],
 
   'feast of dedication (hanukkah)': ['feast of dedication', 'hanukkah', 'chanukah'],

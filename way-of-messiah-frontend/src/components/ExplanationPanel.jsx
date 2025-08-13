@@ -37,7 +37,8 @@ export default function ExplanationPanel({ year, month }) {
         return (
           <div key={i} className="explanation-card">
             <div className="ex-date-title">
-              {it.date ? `${dayjs(it.date).format('YYYY-MM-DD')}: ` : ''}{it.name}
+                {it.date_utc ? `${it.date_utc}: ` : (it.date ? `${dayjs.utc(it.date).format('YYYY-MM-DD')}: ` : '')}
+                {it.name}
             </div>
 
             <p><strong>Purpose:</strong> {ex.purpose || '—'}</p>
