@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import ExplanationPanel from "../components/ExplanationPanel.jsx";
 import "../assets/css/CalendarView.css";
 
 dayjs.extend(utc);
@@ -9,7 +10,6 @@ dayjs.extend(utc);
 const CalendarView = () => {
   const [springEquinox, setSpringEquinox] = useState(null);
   const [events, setEvents] = useState([]);
-  const [explanations, setExplanations] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().startOf("month"));
   const [downloading, setDownloading] = useState(false);
   const BASE_URL = import.meta.env.VITE_API_URL;
@@ -26,23 +26,18 @@ const CalendarView = () => {
       }
     };
 
-    const fetchData = async () => {
+    const fetchEvents = async () => {
       try {
-        const [eventsRes, explanationsRes] = await Promise.all([
-          axios.get(`${BASE_URL}/api/events`),
-          axios.get(`${BASE_URL}/api/explanations`)
-        ]);
+        const eventsRes = await axios.get(`${BASE_URL}/api/events`);
         setEvents(eventsRes.data || []);
-        setExplanations(explanationsRes.data || []);
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching events:", err);
         setEvents([]);
-        setExplanations([]);
       }
     };
 
     fetchEquinox();
-    fetchData();
+    fetchEvents();
   }, [BASE_URL, selectedMonth]);
 
   // ---------- Helpers ----------
@@ -79,135 +74,6 @@ const CalendarView = () => {
       typeof val === "string" && val.toLowerCase().includes("sabbath");
     if (Array.isArray(e.description)) return e.description.some(check);
     return check(e.description);
-  };
-
-  const getFeastExplanations = () => {
-    const inThisMonth = (d) =>
-      dayjs.utc(d).isSame(dayjs.utc(selectedMonth.format("YYYY-MM-01")), "month");
-
-    const feastEvents = events.filter(
-      (e) => inThisMonth(e.date) && isFeastEvent(e)
-    );
-    const sabbathEvents = events.filter(
-      (e) => inThisMonth(e.date) && isSabbathEvent(e)
-    );
-
-    // If ONLY Sabbaths this month, render a single Sabbath info block with all fields
-    if (feastEvents.length === 0 && sabbathEvents.length > 0) {
-      const sabbathInfo = explanations.find(
-        (x) => x.name?.toLowerCase() === "sabbath"
-      );
-      if (!sabbathInfo) return <p>No explanation found for Sabbath.</p>;
-
-      return (
-        <div className="space-y-1">
-          <p className="font-bold">Sabbath</p>
-          {sabbathInfo.purpose && (
-            <p>
-              <strong>Purpose:</strong> {sabbathInfo.purpose}
-            </p>
-          )}
-          {sabbathInfo.length && (
-            <p>
-              <strong>Length:</strong> {sabbathInfo.length}
-            </p>
-          )}
-          {Array.isArray(sabbathInfo.restrictions) &&
-            sabbathInfo.restrictions.length > 0 && (
-              <>
-                <p>
-                  <strong>Restrictions:</strong>
-                </p>
-                <ul className="list-disc pl-5">
-                  {sabbathInfo.restrictions.map((r, idx) => (
-                    <li key={idx}>{r}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-          {sabbathInfo.whenObserved && (
-            <p>
-              <strong>When Observed:</strong> {sabbathInfo.whenObserved}
-            </p>
-          )}
-          {sabbathInfo.whoItWasBindingOn && (
-            <p>
-              <strong>Who It Was Binding On:</strong>{" "}
-              {sabbathInfo.whoItWasBindingOn}
-            </p>
-          )}
-          {sabbathInfo.customs && (
-            <p>
-              <strong>Customs:</strong> {sabbathInfo.customs}
-            </p>
-          )}
-        </div>
-      );
-    }
-
-    if (feastEvents.length === 0) return null;
-
-    // De-dupe multi-day feasts using normalized tag
-    const uniqueFeasts = new Map();
-    feastEvents.forEach((e) => {
-      const feastTag = Array.isArray(e.description)
-        ? e.description.find((d) => isFeast(d))
-        : isFeast(e.description)
-        ? e.description
-        : null;
-
-      const normalizedTag = normalizeFeastTag(feastTag);
-      if (normalizedTag && !uniqueFeasts.has(normalizedTag)) {
-        uniqueFeasts.set(normalizedTag, {
-          feastTag,
-          date: e.date,
-          info: explanations.find(
-            (x) => normalizeFeastTag(x.name) === normalizedTag
-          ),
-        });
-      }
-    });
-
-    return Array.from(uniqueFeasts.values()).map(({ feastTag, date, info }) => (
-      <div key={feastTag} className="mb-3">
-        <p className="font-bold">{dayjs.utc(date).format("YYYY-MM-DD")}: {feastTag}</p>
-        <p>
-          <strong>Purpose:</strong> {info?.purpose || "—"}
-        </p>
-        {info?.length && (
-          <p>
-            <strong>Length:</strong> {info.length}
-          </p>
-        )}
-        {Array.isArray(info?.restrictions) && info.restrictions.length > 0 && (
-          <>
-            <p>
-              <strong>Restrictions:</strong>
-            </p>
-            <ul className="list-disc pl-5">
-              {info.restrictions.map((r, idx) => (
-                <li key={idx}>{r}</li>
-              ))}
-            </ul>
-          </>
-        )}
-        {info?.whenObserved && (
-          <p>
-            <strong>When Observed:</strong> {info.whenObserved}
-          </p>
-        )}
-        {info?.whoItWasBindingOn && (
-          <p>
-            <strong>Who It Was Binding On:</strong> {info.whoItWasBindingOn}
-          </p>
-        )}
-        {info?.customs && (
-          <p>
-            <strong>Customs:</strong> {info.customs}
-          </p>
-        )}
-      </div>
-    ));
   };
 
   const renderCells = (month) => {
@@ -316,7 +182,7 @@ const CalendarView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 text-black p-4">
+    <div className="min-h-screen bg-gray-100 text-black p-4 calendar-page">
       <h1 className="calendar-view-title text-2xl font-bold">
         CONSECRATED DAYS OF YAHUAH
       </h1>
@@ -348,19 +214,18 @@ const CalendarView = () => {
         </button>
       </div>
 
+      {/* Day-of-week header */}
       <div className="calendar-header">
         {"Sun Mon Tue Wed Thu Fri Sat".split(" ").map((d) => (
           <div key={d}>{d}</div>
         ))}
       </div>
 
-      <div className="calendar-grid">{renderCells(selectedMonth)}</div>
-
-      <div className="notes max-w-4xl mx-auto mt-4 bg-white p-4 border border-gray-300">
-        <h3 className="text-lg font-semibold mb-2 text-center">
-          Explanations for Set-Apart Days
-        </h3>
-        {getFeastExplanations()}
+      {/* Grid + Explanations wrapped so only the bottom panel scrolls */}
+      <div className="calendar-content">
+        <div className="calendar-grid">{renderCells(selectedMonth)}</div>
+        {/* ✅ Explanations panel (fetches month/year itself) */}
+        <ExplanationPanel year={selectedMonth.year()} month={selectedMonth.month() + 1} />
       </div>
     </div>
   );
