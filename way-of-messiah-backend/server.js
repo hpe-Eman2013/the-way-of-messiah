@@ -18,6 +18,7 @@ const testimonyRoutes = require("./routes/testimonyRoutes");
 const calendarRoutes = require('./routes/calendarRoutes');
 const explanationsRoute = require('./routes/explanations');
 const equinoxRoute = require('./routes/equinox');
+const calendarDownload = require('./routes/calendarDownload');
 
 // Middleware
 app.use(cors());
@@ -34,6 +35,7 @@ app.use("/api", require("./routes/events"));
 app.use('/calendar', calendarRoutes);
 app.use('/api/explanations', explanationsRoute);
 app.use('/api/equinox', equinoxRoute);
+app.use('/calendar', calendarDownload);
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");

@@ -10,7 +10,19 @@ dayjs.extend(utc);
 const CalendarView = () => {
   const [springEquinox, setSpringEquinox] = useState(null);
   const [events, setEvents] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState(dayjs().startOf("month"));
+
+  // --- Print mode & query params ---
+  const params = new URLSearchParams(window.location.search);
+  const printMode = params.get("print") === "1";
+  const qsYear = Number(params.get("year"));
+  const qsMonth = Number(params.get("month"));
+
+  const initialMonth = qsYear && qsMonth
+    ? dayjs(`${qsYear}-${String(qsMonth).padStart(2, "0")}-01`)
+    : dayjs().startOf("month");
+
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth);
+  const [panelReady, setPanelReady] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -52,9 +64,10 @@ const CalendarView = () => {
     s
       ?.toString()
       .toLowerCase()
-      .replace(/\s+(start|end)$/i, "")
       .replace(/\(.*?\)/g, "")
       .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\s+(start|end)\s*$/i, "")
       .trim();
 
   // Compare using UTC to avoid TZ pushing items to the previous/next day
@@ -151,11 +164,13 @@ const CalendarView = () => {
   const goToPreviousMonth = () => setSelectedMonth((prev) => prev.subtract(1, "month"));
   const goToNextMonth = () => setSelectedMonth((prev) => prev.add(1, "month"));
 
-  // Download ZIP
+  // Download ZIP (start from current view)
   const handleDownloadCalendar = async () => {
     try {
       setDownloading(true);
-      const response = await fetch(`${BASE_URL}/calendar/download`);
+      const y = selectedMonth.year();
+      const m = selectedMonth.month() + 1;
+      const response = await fetch(`${BASE_URL}/calendar/download?year=${y}&startMonth=${m}&months=12`);
       if (!response.ok) throw new Error("Failed to download calendar");
       const blob = await response.blob();
 
@@ -182,7 +197,11 @@ const CalendarView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 text-black p-4 calendar-page">
+    <div
+      id="print-ready"
+      data-state={panelReady ? 'ready' : 'loading'}
+      className={`min-h-screen bg-gray-100 text-black p-4 calendar-page ${printMode ? 'print' : ''}`}
+    >
       <h1 className="calendar-view-title text-2xl font-bold">
         CONSECRATED DAYS OF YAHUAH
       </h1>
@@ -190,29 +209,31 @@ const CalendarView = () => {
         {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
       </h2>
 
-      <div className="flex justify-center items-center gap-3 mb-4 flex-wrap">
-        <button
-          onClick={goToPreviousMonth}
-          className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
-        >
-          ← Prev
-        </button>
-        <button
-          onClick={goToNextMonth}
-          className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
-        >
-          Next →
-        </button>
-        <button
-          onClick={handleDownloadCalendar}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2"
-        >
-          {downloading ? (
-            <span className="loader inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          ) : null}
-          {downloading ? "Downloading..." : "Download Calendar (.zip)"}
-        </button>
-      </div>
+      {!printMode && (
+        <div className="flex justify-center items-center gap-3 mb-4 flex-wrap">
+          <button
+            onClick={goToPreviousMonth}
+            className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
+          >
+            ← Prev
+          </button>
+          <button
+            onClick={goToNextMonth}
+            className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
+          >
+            Next →
+          </button>
+          <button
+            onClick={handleDownloadCalendar}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2"
+          >
+            {downloading ? (
+              <span className="loader inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            ) : null}
+            {downloading ? "Downloading..." : "Download Calendar (.zip)"}
+          </button>
+        </div>
+      )}
 
       {/* Day-of-week header */}
       <div className="calendar-header">
@@ -224,8 +245,12 @@ const CalendarView = () => {
       {/* Grid + Explanations wrapped so only the bottom panel scrolls */}
       <div className="calendar-content">
         <div className="calendar-grid">{renderCells(selectedMonth)}</div>
-        {/* ✅ Explanations panel (fetches month/year itself) */}
-        <ExplanationPanel year={selectedMonth.year()} month={selectedMonth.month() + 1} />
+        {/* ✅ Explanations panel (signals when loaded) */}
+        <ExplanationPanel
+          year={selectedMonth.year()}
+          month={selectedMonth.month() + 1}
+          onLoaded={() => setPanelReady(true)}
+        />
       </div>
     </div>
   );

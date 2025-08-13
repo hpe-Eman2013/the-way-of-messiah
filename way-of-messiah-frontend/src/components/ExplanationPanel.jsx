@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 
-export default function ExplanationPanel({ year, month }) {
+export default function ExplanationPanel({ year, month, onLoaded }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,11 +16,14 @@ export default function ExplanationPanel({ year, month }) {
       } catch {
         if (!cancel) setItems([]);
       } finally {
-        if (!cancel) setLoading(false);
+        if (!cancel) {
+            setLoading(false);
+            onLoaded && onLoaded();
+        }
       }
     })();
     return () => { cancel = true; };
-  }, [year, month]);
+  }, [year, month, onLoaded]);
 
   if (loading) return <div className="explanations">Loading…</div>;
 
