@@ -4,7 +4,7 @@ export default function DonatePage() {
   const BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "";
 
   const PRESETS = [10, 25, 50, 100, 250];
-  const [amount, setAmount] = useState(10);
+  const [amount, setAmount] = useState(50);
   const [custom, setCustom] = useState("");
   const [monthly, setMonthly] = useState(false);
   const [email, setEmail] = useState("");
@@ -17,12 +17,26 @@ export default function DonatePage() {
   const success = params.get("success") === "1";
   const canceled = params.get("canceled") === "1";
 
+  // Remembered last donation (from sessionStorage)
+  const [lastDonation, setLastDonation] = useState(null);
+  useEffect(() => {
+    try {
+      const a = sessionStorage.getItem('donation:last-amount');
+      const f = sessionStorage.getItem('donation:last-frequency');
+      if (a) setLastDonation({ amount: parseFloat(a), freq: f || 'one-time' });
+    } catch {}
+  }, []);
+
   // Optionally clear the query after showing a message
   useEffect(() => {
     if (success || canceled) {
       const url = new URL(window.location.href);
       url.search = "";
       window.history.replaceState({}, "", url.toString());
+      try {
+        sessionStorage.removeItem('donation:last-amount');
+        sessionStorage.removeItem('donation:last-frequency');
+      } catch {}
     }
   }, [success, canceled]);
 
@@ -54,6 +68,11 @@ export default function DonatePage() {
         body = { tierAmount: dollars, email, note, successUrl, cancelUrl };
       }
 
+      // Remember attempt so we can show the amount after redirect back
+      try {
+        sessionStorage.setItem('donation:last-amount', String(dollars));
+        sessionStorage.setItem('donation:last-frequency', monthly ? 'monthly' : 'one-time');
+      } catch {}
       const r = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,7 +108,7 @@ export default function DonatePage() {
       {/* Success / Canceled banners */}
       {success && (
         <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-700 p-3">
-          Thank you! Your <strong>test</strong> donation succeeded.
+          Thank you! Your <strong>test</strong> donation{lastDonation?.amount != null && (<> of <strong>${lastDonation.amount.toFixed(2)}</strong>{lastDonation?.freq === 'monthly' ? ' / month' : ''}</>)} succeeded.
         </div>
       )}
       {canceled && (
