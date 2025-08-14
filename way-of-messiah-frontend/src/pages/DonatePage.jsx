@@ -4,7 +4,7 @@ export default function DonatePage() {
   const BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "";
 
   const PRESETS = [10, 25, 50, 100, 250];
-  const [amount, setAmount] = useState(50);
+  const [amount, setAmount] = useState(10);
   const [custom, setCustom] = useState("");
   const [monthly, setMonthly] = useState(false);
   const [email, setEmail] = useState("");
