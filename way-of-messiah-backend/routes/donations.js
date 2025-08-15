@@ -22,14 +22,14 @@ const MONTHLY_PRODUCT_ID = process.env.STRIPE_MONTHLY_PRODUCT_ID; // required fo
 const donationSchema = new mongoose.Schema(
   {
     amount: Number, // dollars
-  currency: { type: String, default: 'usd' },
+    currency: { type: String, default: 'usd' },
     frequency: { type: String, enum: ['one-time', 'monthly'], default: 'one-time' },
-  email: String,
-  note: String,
-  stripe_session_id: String,
-  stripe_payment_intent: String,
-  stripe_subscription_id: String,
-  status: { type: String, default: 'pending' },
+    email: String,
+    note: String,
+    stripe_session_id: String,
+    stripe_payment_intent: String,
+    stripe_subscription_id: String,
+    status: { type: String, default: 'pending' },
   },
   { timestamps: true }
 );
@@ -51,8 +51,10 @@ router.get('/health', (req, res) => res.json({ ok: true }));
 // ---------- One-time donation ----------
 router.post('/checkout', async (req, res) => {
   try {
-    const { amount, email, note, successUrl, cancelUrl } = req.body || {};
-    const dollars = sanitizeAmount(amount);
+    const { amount, tierAmount, donationAmount, finalAmount, email, note, successUrl, cancelUrl } = req.body || {};
+    // Accept multiple client keys for flexibility
+    const rawAmount = amount ?? tierAmount ?? donationAmount ?? finalAmount;
+    const dollars = sanitizeAmount(rawAmount);
     if (!dollars) return res.status(400).json({ error: 'Invalid amount' });
 
     const session = await stripe.checkout.sessions.create({
@@ -61,15 +63,15 @@ router.post('/checkout', async (req, res) => {
       customer_email: email || undefined,
       line_items: [
         {
-        price_data: {
-          currency: 'usd',
-          product_data: {
+          price_data: {
+            currency: 'usd',
+            product_data: {
               name: 'Donation — The Way of Messiah',
-            description: note ? String(note).slice(0, 490) : undefined,
-          },
+              description: note ? String(note).slice(0, 490) : undefined,
+            },
             unit_amount: dollarsToCents(dollars),
-        },
-        quantity: 1,
+          },
+          quantity: 1,
         },
       ],
       success_url: successUrl || `${FRONTEND_URL}${SUCCESS_PATH}?session_id={CHECKOUT_SESSION_ID}`,
@@ -79,14 +81,14 @@ router.post('/checkout', async (req, res) => {
 
     // Optional: create a local record
     try {
-    await Donation.create({
+      await Donation.create({
         amount: dollars,
         email,
         note,
-      stripe_session_id: session.id,
-      frequency: 'one-time',
-      status: 'created',
-    });
+        stripe_session_id: session.id,
+        frequency: 'one-time',
+        status: 'created',
+      });
     } catch (e) {
       // Non-fatal if DB is not connected
       console.warn('Donation.create skipped/failed:', e.message);
@@ -130,14 +132,14 @@ router.post('/subscription', async (req, res) => {
     });
 
     try {
-    await Donation.create({
-      amount: dollars,
-      email,
-      note,
-      stripe_session_id: session.id,
-      frequency: 'monthly',
-      status: 'created',
-    });
+      await Donation.create({
+        amount: dollars,
+        email,
+        note,
+        stripe_session_id: session.id,
+        frequency: 'monthly',
+        status: 'created',
+      });
     } catch (e) {
       console.warn('Donation.create (sub) skipped/failed:', e.message);
     }
@@ -164,34 +166,26 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
-      const session = event.data.object;
-        // Update local record (both one-time and subscription)
-      await Donation.findOneAndUpdate(
-        { stripe_session_id: session.id },
-        {
-          status: 'paid',
-          stripe_payment_intent: session.payment_intent || undefined,
-          stripe_subscription_id: session.subscription || undefined,
-          email: session.customer_details?.email || undefined,
-        },
-        { new: true }
-      );
+        const session = event.data.object;
+        await Donation.findOneAndUpdate(
+          { stripe_session_id: session.id },
+          {
+            status: 'paid',
+            stripe_payment_intent: session.payment_intent || undefined,
+            stripe_subscription_id: session.subscription || undefined,
+            email: session.customer_details?.email || undefined,
+          },
+          { new: true }
+        );
         break;
-    }
-
+      }
       case 'invoice.paid': {
-        // Subscription renewal; you could record recurring payments here.
-        // const invoice = event.data.object;
         break;
       }
-
       case 'charge.refunded': {
-        // Handle refunds if needed
         break;
       }
-
       default:
-        // console.log('Unhandled event:', event.type);
         break;
     }
 
@@ -201,5 +195,11 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     res.status(500).send('Webhook handler failed');
   }
 });
+
+// ✅ JSON parser for non-webhook routes within this router
+router.use((req, res, next) => {
+  if (req.path === '/webhook') return next();
+  return express.json()(req, res, next);
+});  
 
 module.exports = router;
