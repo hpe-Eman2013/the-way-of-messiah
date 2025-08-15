@@ -210,16 +210,36 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        await Donation.findOneAndUpdate(
+        const filter = {
+          $or: [
           { stripe_session_id: session.id },
-          {
+            ...(session.payment_intent ? [{ stripe_payment_intent: session.payment_intent }] : []),
+            ...(session.subscription ? [{ stripe_subscription_id: session.subscription }] : []),
+          ],
+        };
+        const update = {
+          $set: {
             status: 'paid',
+            // Ensure we always store current identifiers
+            stripe_session_id: session.id,
             stripe_payment_intent: session.payment_intent || undefined,
             stripe_subscription_id: session.subscription || undefined,
             email: session.customer_details?.email || undefined,
+            amount: session.amount_total ? session.amount_total / 100 : undefined,
+            currency: session.currency || 'usd',
+            // Derive frequency from session.mode
+            frequency: session.mode === 'subscription' ? 'monthly' : 'one-time',
           },
-          { new: true }
-        );
+          $setOnInsert: {
+            // If the pre-checkout insert never happened, at least capture a minimal record
+            note: session.metadata?.note || '',
+          },
+        };
+        await Donation.findOneAndUpdate(filter, update, {
+          new: true,
+          upsert: true,
+          setDefaultsOnInsert: true,
+        });
         break;
       }
       case 'invoice.paid': {
