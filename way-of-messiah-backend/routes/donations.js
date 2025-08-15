@@ -65,6 +65,23 @@ router.use((req, res, next) => {
   if (req.path === '/webhook') return next();
   return express.json()(req, res, next);
 });
+// Get session details for the success page
+router.get('/session/:id', async (req, res) => {
+  try {
+    const s = await stripe.checkout.sessions.retrieve(req.params.id, { expand: ['payment_intent'] });
+    res.json({
+      id: s.id,
+      amount_total: s.amount_total,   // cents
+      currency: s.currency,
+      email: s.customer_details?.email,
+      frequency: s.mode === 'subscription' ? 'monthly' : 'one-time',
+      payment_status: s.payment_status,
+    });
+  } catch (e) {
+    res.status(404).json({ error: 'Session not found' });
+  }
+});
+
 
 // ---------- One-time donation ----------
 router.post('/checkout', async (req, res) => {

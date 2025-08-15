@@ -1,193 +1,235 @@
-import { useMemo, useState, useEffect } from "react";
-
-export default function DonatePage() {
-  const BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "";
+import { useMemo, useState } from "react";
 
   const PRESETS = [10, 25, 50, 100, 250];
+
+export default function DonationPage() {
+  const [mode, setMode] = useState("one-time"); // 'one-time' | 'monthly'
   const [amount, setAmount] = useState(50);
   const [custom, setCustom] = useState("");
-  const [monthly, setMonthly] = useState(false);
+  const [coverFees, setCoverFees] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  // --- Success / Canceled banners via query params ---
-  const params = new URLSearchParams(window.location.search);
-  const success = params.get("success") === "1";
-  const canceled = params.get("canceled") === "1";
+  // Backend base
+  const base = import.meta.env.VITE_API_URL || "http://localhost:10000";
 
-  // Remembered last donation (from sessionStorage)
-  const [lastDonation, setLastDonation] = useState(null);
-  useEffect(() => {
-    try {
-      const a = sessionStorage.getItem('donation:last-amount');
-      const f = sessionStorage.getItem('donation:last-frequency');
-      if (a) setLastDonation({ amount: parseFloat(a), freq: f || 'one-time' });
-    } catch {}
-  }, []);
+  // Fee settings (adjust to your Stripe plan if needed)
+  const FEE_RATE = 0.029;   // 2.9%
+  const FEE_FIXED = 0.30;   // $0.30
 
-  // Optionally clear the query after showing a message
-  useEffect(() => {
-    if (success || canceled) {
-      const url = new URL(window.location.href);
-      url.search = "";
-      window.history.replaceState({}, "", url.toString());
-      try {
-        sessionStorage.removeItem('donation:last-amount');
-        sessionStorage.removeItem('donation:last-frequency');
-      } catch {}
+  const cleanNumber = (v) => {
+    if (typeof v === "number") return v;
+    if (typeof v === "string") {
+      const x = v.replace(/[^0-9.\-]/g, "");
+      const n = Number(x);
+      return Number.isFinite(n) ? n : NaN;
     }
-  }, [success, canceled]);
+    return NaN;
+  };
 
-  const finalAmount = useMemo(() => {
-    const c = Number(custom);
-    if (!Number.isNaN(c) && c > 0) return Math.round(c * 100) / 100;
+  const baseAmount = useMemo(() => {
+    const c = cleanNumber(custom);
+    if (Number.isFinite(c) && c > 0) return c;
     return amount;
   }, [custom, amount]);
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    const dollars = finalAmount;
-    if (!dollars || dollars <= 0) {
-      setError("Please enter a valid amount.");
-      return;
-    }
+  const totalAmount = useMemo(() => {
+    const a = Math.max(1, Math.min(baseAmount, 100000));
+    if (!coverFees) return a;
+    // gross-up: amount the donor pays so that net after fees ≈ a
+    // Solve for T: T - (T*rate + fixed) = a  =>  T = (a + fixed) / (1 - rate)
+    const gross = (a + FEE_FIXED) / (1 - FEE_RATE);
+    return Math.round(gross * 100) / 100;
+  }, [baseAmount, coverFees]);
 
+  const onPreset = (v) => {
+    setCustom("");
+    setAmount(v);
+  };
+
+  const startCheckout = async () => {
     try {
       setLoading(true);
-      const successUrl = `${window.location.origin}/donate?success=1`;
-      const cancelUrl = `${window.location.origin}/donate?canceled=1`;
+      const endpoint =
+        mode === "monthly"
+          ? "/api/donations/subscription"
+          : "/api/donations/checkout";
 
-      let endpoint = `${BASE_URL}/api/donations/checkout`;
-      let body = { amount: dollars, email, note, successUrl, cancelUrl };
+      const payload =
+        mode === "monthly"
+          ? { tierAmount: totalAmount, email, note, name }
+          : { amount: totalAmount, email, note, name };
 
-      if (monthly) {
-        endpoint = `${BASE_URL}/api/donations/subscription`;
-        body = { tierAmount: dollars, email, note, successUrl, cancelUrl };
-      }
-
-      // Remember attempt so we can show the amount after redirect back
-      try {
-        sessionStorage.setItem('donation:last-amount', String(dollars));
-        sessionStorage.setItem('donation:last-frequency', monthly ? 'monthly' : 'one-time');
-      } catch {}
-      const r = await fetch(endpoint, {
+      const res = await fetch(`${base}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
-      if (!r.ok) {
-        const t = await r.text();
-        throw new Error(t || "Payment creation failed");
-      }
-      const data = await r.json();
 
-      if (data.url) {
-        window.location.href = data.url; // Stripe Checkout URL
-      } else if (data.sessionUrl) {
-        window.location.href = data.sessionUrl; // alt shape if your API returns sessionUrl
-      } else {
-        throw new Error("Unexpected response from server");
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to start checkout");
+      if (!data?.url) throw new Error("No checkout URL returned");
+      window.location.href = data.url;
     } catch (err) {
-      setError(err.message || String(err));
+      alert(err.message || "Unable to start checkout.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2">Support The Way of Messiah</h1>
-      <p className="text-gray-700 mb-6">
-        Your gift helps us keep teaching, building tools like the Enoch calendar, and sharing Yahuah's ways. Thank you!
-      </p>
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="mx-auto max-w-5xl p-6">
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">Support The Way of Messiah</h1>
+          <p className="text-gray-600 mt-1">
+            Your gift helps us develop studies, host events, and maintain the platform.
+          </p>
+        </header>
 
-      {/* Success / Canceled banners */}
-      {success && (
-        <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-700 p-3">
-          Thank you! Your <strong>test</strong> donation{lastDonation?.amount != null && (<> of <strong>${lastDonation.amount.toFixed(2)}</strong>{lastDonation?.freq === 'monthly' ? ' / month' : ''}</>)} succeeded.
-        </div>
-      )}
-      {canceled && (
-        <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 p-3">
-          Checkout was canceled — you were not charged.
-        </div>
-      )}
-
-      <form onSubmit={onSubmit} className="space-y-5 bg-white p-5 rounded-2xl shadow">
-        {/* Amount presets */}
-        <div>
-          <label className="block text-sm font-medium mb-2">Choose an amount</label>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {PRESETS.map((v) => (
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Left column */}
+          <section className="md:col-span-2 space-y-6">
+            {/* Frequency toggle */}
+            <div className="bg-white rounded-2xl shadow p-5">
+              <div className="inline-flex rounded-xl border border-gray-300 overflow-hidden">
+                {["one-time", "monthly"].map((m) => (
               <button
-                type="button"
-                key={v}
-                onClick={() => { setAmount(v); setCustom(""); }}
-                className={`px-3 py-2 rounded border ${finalAmount === v && !custom ? 'bg-gray-900 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className={`px-4 py-2 font-medium transition ${
+                      mode === m
+                        ? "bg-gray-900 text-white"
+                        : "bg-white text-gray-900 hover:bg-gray-100"
+                    }`}
               >
-                ${v}
+                    {m === "one-time" ? "One-time" : "Monthly"}
               </button>
             ))}
           </div>
+              <p className="text-xs text-gray-500 mt-2">
+                You can change/cancel monthly support any time.
+              </p>
+            </div>
+
+            {/* Amount */}
+            <div className="bg-white rounded-2xl shadow p-5">
+              <h2 className="text-lg font-semibold mb-3">Choose an amount</h2>
+              <div className="flex flex-wrap gap-2">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => onPreset(p)}
+                    className={`px-4 py-2 rounded-xl border transition
+                      ${!custom && baseAmount === p
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-900 border-gray-300 hover:border-gray-900"
+                      }`}
+                  >
+                    ${p}
+                  </button>
+                ))}
           <div className="flex items-center gap-2">
-            <span className="text-sm">or other:</span>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <span className="text-gray-500">or</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-700">$</span>
               <input
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder="Enter amount"
+                      inputMode="decimal"
+                      type="text"
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
-                className="pl-6 pr-3 py-2 rounded border w-40"
+                      placeholder="Custom"
+                      className="w-28 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
               />
             </div>
           </div>
-          <p className="text-sm text-gray-600 mt-1">Final amount: <strong>${finalAmount.toFixed(2)}</strong></p>
         </div>
 
-        {/* One-time vs Monthly */}
-        <div className="flex items-center gap-3">
-          <label className="inline-flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" className="scale-110" checked={monthly} onChange={(e) => setMonthly(e.target.checked)} />
-            <span>Make this a <strong>monthly</strong> gift</span>
+              <label className="flex items-center gap-2 mt-4 select-none">
+                <input
+                  type="checkbox"
+                  checked={coverFees}
+                  onChange={(e) => setCoverFees(e.target.checked)}
+                />
+                <span className="text-sm text-gray-700">
+                  Cover processing fees (optional)
+                </span>
           </label>
+
+              <p className="text-xs text-gray-500 mt-2">
+                Min $1, Max $100,000. Amounts are in USD.
+              </p>
         </div>
 
         {/* Donor info */}
-        <div className="grid grid-cols-1 gap-4">
+            <div className="bg-white rounded-2xl shadow p-5">
+              <h2 className="text-lg font-semibold mb-3">Your information (optional)</h2>
+              <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Email (for receipt)</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded border px-3 py-2" placeholder="you@example.com" />
+                  <label className="block text-sm text-gray-700 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    placeholder="John Doe"
+                  />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Note (optional)</label>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} className="w-full rounded border px-3 py-2" rows={3} placeholder="Add a note or prayer request" />
+                  <label className="block text-sm text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    placeholder="john@example.com"
+                  />
           </div>
         </div>
+              <label className="block text-sm text-gray-700 mb-1 mt-4">Note (optional)</label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                placeholder="Message to include with your donation"
+              />
+            </div>
+          </section>
 
-        {error && <div className="text-red-600 text-sm">{error}</div>}
-
+          {/* Right column: Summary */}
+          <aside className="md:col-span-1">
+            <div className="bg-white rounded-2xl shadow p-5 sticky top-6">
+              <h3 className="text-lg font-semibold">Summary</h3>
+              <div className="mt-4 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>{mode === "monthly" ? "Monthly donation" : "One-time donation"}</span>
+                  <span>${baseAmount.toFixed(2)}</span>
+                </div>
+                {coverFees && (
+                  <div className="flex justify-between">
+                    <span>With fees covered</span>
+                    <span>${totalAmount.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
         <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-3 rounded-xl text-white ${loading ? 'bg-gray-400' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                disabled={loading || totalAmount < 1}
+                onClick={startCheckout}
+                className={`w-full mt-6 rounded-xl px-4 py-3 font-semibold transition
+                  ${loading ? "bg-gray-300 text-gray-700 cursor-not-allowed" : "bg-gray-900 text-white hover:opacity-90"}
+                `}
         >
-          {loading ? 'Preparing secure checkout…' : (monthly ? `Give $${finalAmount.toFixed(2)} / month` : `Give $${finalAmount.toFixed(2)} now`)}
+                {loading ? "Starting checkout…" : "Donate"}
         </button>
-
-        <p className="text-xs text-gray-500 mt-2">Payments are processed securely by Stripe. Apple Pay & Google Pay supported where available.</p>
-      </form>
-
-      <div className="mt-6 text-sm text-gray-600">
-        <p>
-          Prefer Zelle/CashApp/PayPal? Email us and we’ll send current details. If you need a year-end statement, keep your email consistent so we can match gifts.
-        </p>
+              <p className="text-xs text-gray-500 mt-3">
+                You’ll be redirected to a secure Stripe Checkout page.
+              </p>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
