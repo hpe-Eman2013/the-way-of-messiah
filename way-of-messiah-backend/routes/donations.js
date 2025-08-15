@@ -39,8 +39,19 @@ const Donation = mongoose.models.Donation || mongoose.model('Donation', donation
 // --- Utils ---
 function clamp(n, min, max) { return Math.min(Math.max(n, min), max); }
 function dollarsToCents(x) { return Math.round(Number(x) * 100); }
+function normalizeCurrency(input) {
+  if (input == null) return null;
+  if (typeof input === 'number') return input;
+  if (typeof input === 'string') {
+    const cleaned = input.replace(/[^0-9.\-]/g, ''); // drop $, commas, spaces
+    if (cleaned === '' || cleaned === '.' || cleaned === '-') return null;
+    return Number(cleaned);
+  }
+  return null;
+}
 function sanitizeAmount(input) {
-  const n = Number(input);
+  const normalized = normalizeCurrency(input);
+  const n = Number(normalized);
   if (!Number.isFinite(n)) return null;
   return clamp(n, MIN_DOLLARS, MAX_DOLLARS);
 }
@@ -48,14 +59,29 @@ function sanitizeAmount(input) {
 // ---------- Health (dev) ----------
 router.get('/health', (req, res) => res.json({ ok: true }));
 
+// ✅ JSON parser for non-webhook routes within this router
+// (Keeps webhook raw; parses JSON for everything else regardless of global middleware order)
+router.use((req, res, next) => {
+  if (req.path === '/webhook') return next();
+  return express.json()(req, res, next);
+});
+
 // ---------- One-time donation ----------
 router.post('/checkout', async (req, res) => {
   try {
-    const { amount, tierAmount, donationAmount, finalAmount, email, note, successUrl, cancelUrl } = req.body || {};
+    const { amount, tierAmount, donationAmount, finalAmount, amount_cents, amountInCents, email, note, successUrl, cancelUrl } = req.body || {};
     // Accept multiple client keys for flexibility
-    const rawAmount = amount ?? tierAmount ?? donationAmount ?? finalAmount;
+    let rawAmount = amount ?? tierAmount ?? donationAmount ?? finalAmount;
+// Support amounts provided in cents
+if ((rawAmount == null) && (amount_cents != null || amountInCents != null)) {
+  const cents = Number(amount_cents ?? amountInCents);
+  if (Number.isFinite(cents)) rawAmount = cents / 100;
+}
     const dollars = sanitizeAmount(rawAmount);
-    if (!dollars) return res.status(400).json({ error: 'Invalid amount' });
+    if (!dollars) {
+      console.warn('Invalid amount payload:', { body: req.body, rawAmount });
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -180,12 +206,15 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         break;
       }
       case 'invoice.paid': {
+        // Handle subscription renewal if desired
         break;
       }
       case 'charge.refunded': {
+        // Handle refunds if needed
         break;
       }
       default:
+        // Unhandled event types can be ignored
         break;
     }
 
@@ -195,11 +224,5 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     res.status(500).send('Webhook handler failed');
   }
 });
-
-// ✅ JSON parser for non-webhook routes within this router
-router.use((req, res, next) => {
-  if (req.path === '/webhook') return next();
-  return express.json()(req, res, next);
-});  
 
 module.exports = router;
