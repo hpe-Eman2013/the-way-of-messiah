@@ -29,6 +29,8 @@ const donationSchema = new mongoose.Schema(
     stripe_session_id: String,
     stripe_payment_intent: String,
     stripe_subscription_id: String,
+    stripe_customer_id: String,
+    donor_name: String,
     status: { type: String, default: 'pending' },
   },
   { timestamps: true }
@@ -69,7 +71,7 @@ router.use((req, res, next) => {
 // ---------- One-time donation ----------
 router.post('/checkout', async (req, res) => {
   try {
-    const { amount, tierAmount, donationAmount, finalAmount, amount_cents, amountInCents, email, note, successUrl, cancelUrl } = req.body || {};
+    const { amount, tierAmount, donationAmount, finalAmount, amount_cents, amountInCents, email, name, note, successUrl, cancelUrl } = req.body || {};
     // Accept multiple client keys for flexibility
     let rawAmount = amount ?? tierAmount ?? donationAmount ?? finalAmount;
 // Support amounts provided in cents
@@ -102,13 +104,15 @@ if ((rawAmount == null) && (amount_cents != null || amountInCents != null)) {
       ],
       success_url: successUrl || `${FRONTEND_URL}${SUCCESS_PATH}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${FRONTEND_URL}${CANCEL_PATH}`,
-      metadata: { frequency: 'one-time' },
+      metadata: { frequency: 'one-time', donor_name: name || '' },
     });
 
     // Optional: create a local record
     try {
       await Donation.create({
         amount: dollars,
+        donor_name: name || '',
+        donor_name: name || '',
         email,
         note,
         stripe_session_id: session.id,
@@ -131,7 +135,7 @@ if ((rawAmount == null) && (amount_cents != null || amountInCents != null)) {
 // Requires STRIPE_MONTHLY_PRODUCT_ID to be set to a single Product ID in your Stripe account
 router.post('/subscription', async (req, res) => {
   try {
-    const { tierAmount, email, note, successUrl, cancelUrl } = req.body || {};
+    const { tierAmount, email, name, note, successUrl, cancelUrl } = req.body || {};
     if (!MONTHLY_PRODUCT_ID) return res.status(500).json({ error: 'Missing STRIPE_MONTHLY_PRODUCT_ID' });
 
     const dollars = sanitizeAmount(tierAmount);
@@ -178,20 +182,59 @@ router.post('/subscription', async (req, res) => {
 });
 
 // ---------- Session lookup (for /donate/success?session_id=...) ----------
+// GET /api/donations/session/:id
 router.get('/session/:id', async (req, res) => {
   try {
     const s = await stripe.checkout.sessions.retrieve(req.params.id, { expand: ['payment_intent'] });
+
+    // Try to enrich with your local Donation record (safe even if not found)
+    let donorName = null, note = null;
+    try {
+      const doc = await Donation.findOne({ stripe_session_id: s.id }).lean();
+      if (doc) {
+        donorName = doc.donor_name ?? null;
+        note = doc.note ?? null;
+      }
+    } catch (e) {
+      // Non-fatal if DB isn’t connected during dev
+    }
+
     res.json({
       id: s.id,
-      amount_total: s.amount_total,   // cents
+      amount_total: s.amount_total,       // cents
       currency: s.currency,
       email: s.customer_details?.email,
       frequency: s.mode === 'subscription' ? 'monthly' : 'one-time',
       payment_status: s.payment_status,
+      donor_name: donorName,
+      note,
     });
   } catch (e) {
     res.status(404).json({ error: 'Session not found' });
   }
+});
+
+
+// ---------- Customer Portal (manage monthly subscriptions) ----------
+router.post('/portal', async (req, res) => {
+try {
+const { sessionId, customerId, returnUrl } = req.body || {};
+let customer = customerId;
+if (!customer && sessionId) {
+const s = await stripe.checkout.sessions.retrieve(sessionId);
+customer = s.customer;
+}
+if (!customer) return res.status(400).json({ error: 'Missing customerId or sessionId' });
+
+const portal = await stripe.billingPortal.sessions.create({
+customer,
+return_url: returnUrl || `${FRONTEND_URL}${SUCCESS_PATH}`,
+});
+res.json({ url: portal.url });
+} catch (e) {
+console.error('portal error', e);
+res.status(500).json({ error: 'Failed to create portal session' });
+}
 });
 
 // ---------- Stripe webhook ----------
@@ -229,6 +272,8 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             currency: session.currency || 'usd',
             // Derive frequency from session.mode
             frequency: session.mode === 'subscription' ? 'monthly' : 'one-time',
+            stripe_customer_id: session.customer || undefined,
+            donor_name: session.metadata?.donor_name || undefined,
           },
           $setOnInsert: {
             // If the pre-checkout insert never happened, at least capture a minimal record
