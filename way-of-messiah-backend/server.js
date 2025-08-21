@@ -20,8 +20,6 @@ const equinoxRoute = require('./routes/equinox');
 const calendarDownload = require('./routes/calendarDownload');
 const donationsRoute = require('./routes/donations');
 
-// Raw body for Stripe webhook
-app.post('/api/donations/webhook', express.raw({ type: 'application/json' }), donationsRoute);
 
 // Middleware
 app.use(cors());
