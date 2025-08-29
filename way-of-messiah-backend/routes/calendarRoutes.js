@@ -4,7 +4,7 @@ const express = require("express");
 const router = express.Router();
 const path = require("path");
 const fs = require("fs/promises");
-const { getEventsFromDB } = require("../models/CalendarService");
+const { getEventsFromDB } = require("../services/calendarService");
 const generateCalendarZIP = require("../utils/generateCalendarZIP");
 
 router.get("/download", async (req, res) => {
