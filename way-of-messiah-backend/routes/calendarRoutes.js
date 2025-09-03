@@ -4,7 +4,10 @@ const express = require("express");
 const router = express.Router();
 const path = require("path");
 const fs = require("fs/promises");
-const { getEventsFromDB } = require("../services/calendarService");
+// ⬇️ UPDATED: pull from services now
+const { getEventsFromDB, syncEnochFeastsToMongo } = require("../services/calendarService");
+// ⬇️ Add your Mongoose model
+const Event = require("../models/Event");
 const generateCalendarZIP = require("../utils/generateCalendarZIP");
 
 router.get("/download", async (req, res) => {
@@ -36,6 +39,28 @@ router.get("/download", async (req, res) => {
   } catch (err) {
     console.error("Failed to generate calendar ZIP:", err);
     res.status(500).send("Failed to generate calendar ZIP");
+  }
+});
+// POST /api/calendar/enoch/:year/feasts
+router.post("/enoch/:year/feasts", async (req, res, next) => {
+  try {
+    const year = Number(req.params.year);
+    const { equinoxISO, overwrite = true, sukkotAllDays = false } = req.body || {};
+
+    if (!equinoxISO) {
+      return res.status(400).json({ error: "equinoxISO (ISO date string) is required" });
+    }
+
+    const result = await syncEnochFeastsToMongo({
+      equinoxDate: new Date(equinoxISO), // e.g., "2025-03-20T00:00:00.000Z"
+      EventModel: Event,
+      overwrite,
+      sukkotAllDays,
+    });
+
+    res.json({ year, ...result });
+  } catch (err) {
+    next(err);
   }
 });
 
