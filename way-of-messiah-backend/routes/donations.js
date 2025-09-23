@@ -306,5 +306,46 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     res.status(500).send('Webhook handler failed');
   }
 });
+// POST /api/donations/reconcile  { sessionId: 'cs_test_...' }
+router.post('/reconcile', async (req, res) => {
+  try {
+    const { sessionId } = req.body || {};
+    if (!sessionId) return res.status(400).json({ error: 'Missing sessionId' });
+
+    const s = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] });
+    if (s.payment_status !== 'paid') {
+      return res.json({ ok: true, updated: false, reason: `payment_status=${s.payment_status}` });
+    }
+
+    const filter = {
+      $or: [
+        { stripe_session_id: s.id },
+        ...(s.payment_intent ? [{ stripe_payment_intent: s.payment_intent }] : []),
+        ...(s.subscription ? [{ stripe_subscription_id: s.subscription }] : []),
+      ],
+    };
+    const update = {
+      $set: {
+        status: 'paid',
+        stripe_session_id: s.id,
+        stripe_payment_intent: s.payment_intent || undefined,
+        stripe_subscription_id: s.subscription || undefined,
+        email: s.customer_details?.email || undefined,
+        amount: s.amount_total ? s.amount_total / 100 : undefined,
+        currency: s.currency || 'usd',
+        frequency: s.mode === 'subscription' ? 'monthly' : 'one-time',
+      },
+      $setOnInsert: { note: '' },
+    };
+
+    const doc = await Donation.findOneAndUpdate(filter, update, {
+      new: true, upsert: true, setDefaultsOnInsert: true,
+    });
+    res.json({ ok: true, updated: true, doc });
+  } catch (e) {
+    console.error('reconcile error', e);
+    res.status(500).json({ error: 'Reconcile failed' });
+  }
+});
 
 module.exports = router;

@@ -1,6 +1,7 @@
 // server.js
 const express = require("express");
 const mongoose = require("mongoose");
+const donationsRoute = require('./routes/donations');
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
@@ -18,7 +19,6 @@ const calendarRoutes = require('./routes/calendarRoutes');
 const explanationsRoute = require('./routes/explanations');
 const equinoxRoute = require('./routes/equinox');
 const calendarDownload = require('./routes/calendarDownload');
-const donationsRoute = require('./routes/donations');
 
 
 // Middleware
