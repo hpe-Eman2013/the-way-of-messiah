@@ -401,7 +401,13 @@ router.post("/reconcile", async (req, res) => {
     res.json({ ok: true, updated: true, doc });
   } catch (e) {
     console.error("reconcile error", e);
-    res.status(500).json({ error: "Reconcile failed" });
+    res.status(500).json({
+      error: "Reconcile failed",
+      message: e.message,
+      type: e.type,
+      code: e.code,
+      raw: e.raw?.message,
+    });
   }
 });
 // GET /api/donations/reconcile/:sessionId
