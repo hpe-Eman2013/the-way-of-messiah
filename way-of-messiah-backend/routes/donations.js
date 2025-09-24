@@ -404,4 +404,43 @@ router.post("/reconcile", async (req, res) => {
     res.status(500).json({ error: "Reconcile failed" });
   }
 });
+// GET /api/donations/reconcile/:sessionId
+router.get('/reconcile/:sessionId', async (req, res) => {
+  try {
+    const sessionId = req.params.sessionId;
+    const s = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] });
+    const paid = s.payment_status === 'paid';
+
+    if (!paid) return res.json({ ok: true, updated: false, reason: `payment_status=${s.payment_status}` });
+
+    const filter = {
+      $or: [
+        { stripe_session_id: s.id },
+        ...(s.payment_intent ? [{ stripe_payment_intent: s.payment_intent }] : []),
+        ...(s.subscription ? [{ stripe_subscription_id: s.subscription }] : []),
+      ],
+    };
+    const update = {
+      $set: {
+        status: 'paid',
+        stripe_session_id: s.id,
+        stripe_payment_intent: s.payment_intent || undefined,
+        stripe_subscription_id: s.subscription || undefined,
+        email: s.customer_details?.email || undefined,
+        amount: s.amount_total ? s.amount_total / 100 : undefined,
+        currency: s.currency || 'usd',
+        frequency: s.mode === 'subscription' ? 'monthly' : 'one-time',
+      },
+      $setOnInsert: { note: '' },
+    };
+    const doc = await Donation.findOneAndUpdate(filter, update, {
+      new: true, upsert: true, setDefaultsOnInsert: true,
+    });
+    res.json({ ok: true, updated: true, doc });
+  } catch (e) {
+    console.error('reconcile GET error', e);
+    res.status(500).json({ error: 'Reconcile failed' });
+  }
+});
+
 module.exports = router;
