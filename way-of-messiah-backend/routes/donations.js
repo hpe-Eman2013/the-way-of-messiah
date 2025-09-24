@@ -4,6 +4,8 @@
 // or add a top-level raw handler for '/donations/webhook' before express.json(), so the webhook body remains raw.
 
 const express = require("express");
+const dotenv = require("dotenv");
+dotenv.config();
 const mongoose = require("mongoose");
 const Stripe = require("stripe");
 
@@ -11,6 +13,13 @@ const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
+// --- Sanity check ---
+console.log(
+  "Stripe key loaded (test?):",
+  process.env.STRIPE_SECRET_KEY
+    ? process.env.STRIPE_SECRET_KEY.slice(0, 7)
+    : "MISSING"
+);
 
 // --- Config (tweak as needed) ---
 const MIN_DOLLARS = Number(process.env.DONATION_MIN || 1);
