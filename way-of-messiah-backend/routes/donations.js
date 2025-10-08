@@ -219,7 +219,6 @@ router.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-$&
 router.post("/checkout", async (req, res) => {
   try {
     const { amount, tierAmount, donationAmount, finalAmount, amount_cents, amountInCents, email, name, note, successUrl, cancelUrl } = req.body || {};
