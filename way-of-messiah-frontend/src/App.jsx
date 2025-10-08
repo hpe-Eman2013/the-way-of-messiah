@@ -14,8 +14,8 @@ import CalendarView from './pages/CalendarView';
 import DonatePage from './pages/DonatePage.jsx'; 
 import DonationSuccess from "./pages/DonationSuccess";
 import DonationCancel from "./pages/DonationCancel";
+import DonateThankYou from "./pages/DonateThankYou";
 // Inside <Routes>:
-
 
 function App() {
   return (
@@ -25,7 +25,14 @@ function App() {
         {import.meta.env.MODE === "development" && (
           <>
             <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
+            <Route
+              path="/admin"
+              element={
+                <PrivateRoute>
+                  <Admin />
+                </PrivateRoute>
+              }
+            />
             <Route path="/admin/events/new" element={<AdminEventForm />} />
           </>
         )}
@@ -37,6 +44,7 @@ function App() {
         <Route path="/donate" element={<DonatePage />} />
         <Route path="/donate/success" element={<DonationSuccess />} />
         <Route path="/donate/cancel" element={<DonationCancel />} />
+        <Route path="/donate/thank-you" element={<DonateThankYou />} />
       </Routes>
     </BrowserRouter>
   );

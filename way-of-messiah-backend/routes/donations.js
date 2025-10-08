@@ -28,7 +28,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-10-
 const MIN_DOLLARS = Number(process.env.DONATION_MIN || 1);
 const MAX_DOLLARS = Number(process.env.DONATION_MAX || 100000);
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:5173";
-const SUCCESS_PATH = process.env.DONATION_SUCCESS_PATH || "/donate/success";
+const SUCCESS_PATH = process.env.DONATION_SUCCESS_PATH || "/donate/thank-you";
 const CANCEL_PATH = process.env.DONATION_CANCEL_PATH || "/donate/cancel";
 const MONTHLY_PRODUCT_ID = process.env.STRIPE_MONTHLY_PRODUCT_ID; // used by /subscription
 
