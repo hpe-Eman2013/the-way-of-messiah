@@ -1,7 +1,8 @@
 // server.js
 const express = require("express");
+const app = express();
 const mongoose = require("mongoose");
-const donationsRoute = require('./routes/donations');
+const donationsRoute = require("./routes/donations");
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
@@ -10,20 +11,18 @@ const testimoniesRoute = require("./routes/testimonies");
 const adminRouter = require("./routes/admin");
 const Testimony = require("./models/Testimony");
 
-const app = express();
 const PORT = process.env.PORT || 10000;
 const adminAuthRoutes = require("./routes/adminAuth");
 const adminRoutes = require("./routes/adminRoutes");
 const testimonyRoutes = require("./routes/testimonyRoutes");
-const calendarRoutes = require('./routes/calendarRoutes');
-const explanationsRoute = require('./routes/explanations');
-const equinoxRoute = require('./routes/equinox');
-const calendarDownload = require('./routes/calendarDownload');
-
+const calendarRoutes = require("./routes/calendarRoutes");
+const explanationsRoute = require("./routes/explanations");
+const equinoxRoute = require("./routes/equinox");
+const calendarDownload = require("./routes/calendarDownload");
 
 // Middleware
 app.use(cors());
-app.use('/api/donations', donationsRoute);
+app.use("/api/donations", donationsRoute);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -35,35 +34,60 @@ app.use("/api/auth", adminAuthRoutes);
 app.use("/admin", adminRoutes);
 app.use("/api", require("./routes/testimonies"));
 app.use("/api", require("./routes/events"));
-app.use('/calendar', calendarRoutes);
-app.use('/api/explanations', explanationsRoute);
-app.use('/api/equinox', equinoxRoute);
-app.use('/calendar', calendarDownload);
+app.use("/calendar", calendarRoutes);
+app.use("/api/explanations", explanationsRoute);
+app.use("/api/equinox", equinoxRoute);
+app.use("/calendar", calendarDownload);
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // Multer config for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "public/uploads/"); // ensure this folder exists
-    },
+  },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + file.originalname;
     cb(null, uniqueSuffix);
-  }
+  },
 });
 
 const upload = multer({ storage });
 
 // Routes
 app.get("/", (req, res) => {
-    res.send("The Way of Messiah API is running");
+  res.send("The Way of Messiah API is running");
 });
-
+// 🔹 (Optional) tiny route map to verify what Express sees
+app.get("/_routes", (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((layer) => {
+    if (layer.route && layer.route.path) {
+      const methods = Object.keys(layer.route.methods)
+        .filter(Boolean)
+        .map((m) => m.toUpperCase());
+      routes.push({ path: layer.route.path, methods });
+    } else if (layer.name === "router" && layer.handle.stack) {
+      layer.handle.stack.forEach((r) => {
+        if (r.route) {
+          const methods = Object.keys(r.route.methods)
+            .filter(Boolean)
+            .map((m) => m.toUpperCase());
+          routes.push({
+            path: r.route.path,
+            methods,
+            base: layer.regexp?.toString(),
+          });
+        }
+      });
+    }
+  });
+  res.json(routes);
+});
 // GET approved testimonies
 app.get("/api/testimonies", async(req, res) => {
     try {
