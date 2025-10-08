@@ -142,6 +142,10 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 });
 
 // ---------- Health (dev) ----------
+// 🔹 Self-test endpoint
+router.get("/ping", (req, res) => {
+  res.json({ ok: true, base: "/donations" });
+});
 router.get("/health", (req, res) => res.json({ ok: true }));
 
 // ✅ JSON parser for all non‑webhook routes inside this router
