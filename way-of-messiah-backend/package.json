@@ -1,28 +1,35 @@
 {
-    "name": "way-of-messiah-backend",
-    "version": "1.0.0",
-    "main": "server.js",
-    "scripts": {
-        "start": "node server.js"
-    },
-    "dependencies": {
-        "archiver": "^7.0.1",
-        "bcrypt": "^6.0.0",
-        "bcryptjs": "^3.0.2",
-        "body-parser": "^2.2.0",
-        "canvas": "^3.1.2",
-        "cors": "^2.8.5",
-        "dayjs": "^1.11.13",
-        "dotenv": "^16.6.1",
-        "express": "^4.21.2",
-        "html2canvas": "^1.4.1",
-        "jsonwebtoken": "^9.0.2",
-        "jspdf": "^3.0.1",
-        "jszip": "^3.10.1",
-        "mongoose": "^7.6.1",
-        "multer": "^2.0.1",
-        "nodemailer": "^6.10.1",
-        "puppeteer": "^24.16.1",
-        "stripe": "^12.18.0"
-    }
+  "name": "way-of-messiah-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start:dev": "dotenv -e .env.development -- node server.js",
+    "start:prod": "dotenv -e .env.production -- node server.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "canvas": "^3.1.2",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "html2canvas": "^1.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.1",
+    "jszip": "^3.10.1",
+    "mongoose": "^7.6.1",
+    "multer": "^2.0.1",
+    "nodemailer": "^7.0.9",
+    "puppeteer": "^24.16.1",
+    "stripe": "^12.18.0"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^7.4.4",
+    "nodemon": "^3.1.10"
+  }
 }
