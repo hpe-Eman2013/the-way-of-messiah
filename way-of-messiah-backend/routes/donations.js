@@ -3,7 +3,7 @@
 // IMPORTANT: This router keeps /webhook RAW and parses JSON for all other routes.
 // Mount order in server.js:
 //   const donationsRouter = require("./routes/donations");
-//   app.use("/donations", donationsRouter);
+//   app.use("/api/donations", donationsRouter);
 
 const express = require("express");
 const dotenv = require("dotenv");

@@ -2,7 +2,7 @@
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
-const donationsRoute = require("./routes/donations");
+const donationsRouter = require("./routes/donations");
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
@@ -28,7 +28,7 @@ app.use(
   })
 );
 // APIs
-app.use("/api/donations", donationsRoute);
+app.use("/api/donations", donationsRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/uploads", uploadRouter); // for POST/DELETE uploads
