@@ -28,7 +28,7 @@ app.use(
   })
 );
 // APIs
-app.use("/api/donations", donationsRouter);
+app.use("/api/donations", donationsRoute);
 app.use("/api/events", eventsRouter);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/uploads", uploadRouter); // for POST/DELETE uploads
