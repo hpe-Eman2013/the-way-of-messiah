@@ -2,8 +2,9 @@
 const express = require("express");
 const router = express.Router();
 const Event = require("../models/Event");
+const verifyToken = require("../middleware/verifyToken"); // protect admin-only ops
 
-// List with basic search/filter/pagination
+// List (search/filter/paginate)
 router.get("/", async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page || "1", 10));
@@ -11,6 +12,7 @@ router.get("/", async (req, res) => {
       100,
       Math.max(1, parseInt(req.query.limit || "20", 10))
     );
+
     const q = {};
     if (req.query.search) {
       q.$or = [
@@ -28,6 +30,7 @@ router.get("/", async (req, res) => {
         .limit(limit),
       Event.countDocuments(q),
     ]);
+
     res.json({ items, total, page, pages: Math.ceil(total / limit) });
   } catch (e) {
     res.status(500).json({ error: "Failed to list events" });
@@ -45,9 +48,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Create (protect this with your admin middleware if you have one)
-router.post("/", async (req, res) => {
+// Create (admin only)
+router.post("/", verifyToken, async (req, res) => {
   try {
+    // Expect startDate/endDate as ISO; Admin form already converts local->UTC
     const doc = await Event.create(req.body);
     res.status(201).json(doc);
   } catch (e) {
@@ -55,8 +59,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Update
-router.put("/:id", async (req, res) => {
+// Update (admin only)
+router.put("/:id", verifyToken, async (req, res) => {
   try {
     const doc = await Event.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -69,8 +73,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete
-router.delete("/:id", async (req, res) => {
+// Delete (admin only)
+router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const doc = await Event.findByIdAndDelete(req.params.id);
     if (!doc) return res.status(404).json({ error: "Not found" });
