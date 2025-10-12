@@ -19,6 +19,7 @@ const explanationsRoute = require("./routes/explanations");
 const equinoxRoute = require("./routes/equinox");
 const calendarDownload = require("./routes/calendarDownload");
 const eventsRouter = require("./routes/events");
+const uploadRouter = require("./routes/uploads");
 
 // Middleware
 app.use(
