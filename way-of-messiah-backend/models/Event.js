@@ -1,12 +1,28 @@
+// models/Event.js
 const mongoose = require("mongoose");
 
-const eventSchema = new mongoose.Schema({
-  name: String,
-  date: Date, // << THIS MUST BE Date — not String
-  time: String,
-  location: String,
-  description: [String], // ✅ Make description an array
-  link: String,
-}, { timestamps: true });
+const EventSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    description: String,
+    category: {
+      type: String,
+      enum: ["Feast", "Sabbath", "Gathering", "Teaching", "Other"],
+      default: "Other",
+    },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date },
+    time: String,
+    location: String,
+    address: String,
+    city: String,
+    state: String,
+    country: String,
+    link: String,
+    isPublished: { type: Boolean, default: true },
+    isFeatured: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model("Event", eventSchema);
+module.exports = mongoose.models.Event || mongoose.model("Event", EventSchema);

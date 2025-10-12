@@ -13,31 +13,43 @@ const Testimony = require("./models/Testimony");
 
 const PORT = process.env.PORT || 10000;
 const adminAuthRoutes = require("./routes/adminAuth");
-const adminRoutes = require("./routes/adminRoutes");
 const testimonyRoutes = require("./routes/testimonyRoutes");
 const calendarRoutes = require("./routes/calendarRoutes");
 const explanationsRoute = require("./routes/explanations");
 const equinoxRoute = require("./routes/equinox");
 const calendarDownload = require("./routes/calendarDownload");
+const eventsRouter = require("./routes/events");
 
 // Middleware
-app.use(cors());
-app.use("/api/donations", donationsRoute);
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://thewayofmessiah.net"],
+    credentials: true, // allow cookies
+  })
+);
+// APIs
+app.use("/api/donations", donationsRouter);
+app.use("/api/events", eventsRouter);
+app.use("/api/calendar", calendarRoutes);
+app.use("/api/uploads", uploadRouter); // for POST/DELETE uploads
+
+// Public static files (GET)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Public download (iCal)
+app.get("/calendar.ics", calendarDownload);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
 app.use("/api/testimonies", testimoniesRoute);
 app.use("/", testimonyRoutes); // allows /testimonies
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", adminAuthRoutes);
-app.use("/admin", adminRoutes);
 app.use("/api", require("./routes/testimonies"));
 app.use("/api", require("./routes/events"));
-app.use("/calendar", calendarRoutes);
 app.use("/api/explanations", explanationsRoute);
 app.use("/api/equinox", equinoxRoute);
-app.use("/calendar", calendarDownload);
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");
