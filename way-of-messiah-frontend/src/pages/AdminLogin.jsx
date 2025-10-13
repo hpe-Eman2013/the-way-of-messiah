@@ -1,42 +1,38 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "./lib/api"; // shared axios instance with interceptor
 
-const AdminLogin = () => {
+export default function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Auto-redirect if already logged in
+  // Auto-redirect if a token already exists (normalize legacy key -> jwt)
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    if (token) {
-      navigate("/admin");
+    const legacy = localStorage.getItem("adminToken");
+    if (legacy && !localStorage.getItem("jwt")) {
+      localStorage.setItem("jwt", legacy);
+      localStorage.removeItem("adminToken");
     }
+    if (localStorage.getItem("jwt")) navigate("/admin");
   }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      const BASE_URL = import.meta.env.VITE_API_URL;
-      const res = await axios.post(`${BASE_URL}/api/admin/login`, {
-        username,
-        password,
-      });
-
-      localStorage.setItem("adminToken", res.data.token);
+      // api base already includes /api if you set VITE_API_URL=.../api
+      const { data } = await api.post("/admin/login", { username, password });
+      // Store JWT for protected requests (interceptor will attach it)
+      localStorage.setItem("jwt", data.token);
       navigate("/admin");
     } catch (err) {
-      if (err.response?.status === 401) {
+      if (err.response?.status === 401)
         setError("Invalid username or password.");
-      } else {
-        setError("Server error. Please try again.");
-      }
+      else setError("Server error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -53,7 +49,8 @@ const AdminLogin = () => {
           onChange={(e) => setUsername(e.target.value)}
           required
         />
-        <br /><br />
+        <br />
+        <br />
         <input
           type="password"
           placeholder="Password"
@@ -61,7 +58,8 @@ const AdminLogin = () => {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <br /><br />
+        <br />
+        <br />
         <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
@@ -69,6 +67,4 @@ const AdminLogin = () => {
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
-};
-
-export default AdminLogin;
+}
