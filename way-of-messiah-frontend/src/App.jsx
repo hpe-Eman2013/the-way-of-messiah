@@ -9,7 +9,6 @@ import Testimonies from "./pages/TestimoniesPage";
 import AdminLogin from "./pages/AdminLogin";
 import PrivateRoute from "./components/PrivateRoute";
 import EventsPage from "./pages/EventsPage";
-import AdminEventForm from "./pages/admin/AdminEventForm.jsx";
 import CalendarView from "./pages/CalendarView";
 import DonatePage from "./pages/DonatePage.jsx";
 import DonationSuccess from "./pages/DonationSuccess";
@@ -36,7 +35,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route path="/admin/events/new" element={<AdminEventForm />} />
           </>
         )}
         <Route path="/submit-testimony" element={<SubmitTestimony />} />
