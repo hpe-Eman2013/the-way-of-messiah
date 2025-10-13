@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "./lib/api"; // shared axios instance with interceptor
+import { api } from "../lib/api"; // shared axios instance with interceptor
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("");
