@@ -4,7 +4,14 @@ const router = express.Router();
 const Event = require("../models/Event");
 const verifyToken = require("../middleware/verifyToken"); // protect admin-only ops
 
+// ✅ parse JSON and form bodies for this router only
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
+
 // List (search/filter/paginate)
+// for testing 
+router.get("/ping", (req, res) => res.json({ ok: true }));
+// regular list
 router.get("/", async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page || "1", 10));
