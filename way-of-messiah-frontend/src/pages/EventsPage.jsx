@@ -1,25 +1,33 @@
+// src/pages/EventsPage.jsx — updated to work with /api/events and new schema
+// - Uses `api` axios instance (JWT interceptor already set up)
+// - Expects backend GET /api/events to return { items, total, ... }
+// - Fields: title, category, startDate, endDate, time, location, description, link
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-dayjs.extend(utc);
+import { api } from "../lib/api"; // <-- shared axios instance
 
 import Header from "../components/Header";
 import "../assets/css/EventsPage.css";
+
+dayjs.extend(utc);
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("all"); // all | feast | sabbath
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const BASE_URL = import.meta.env.VITE_API_URL;
-        const response = await axios.get(`${BASE_URL}/api/events`);
-        setEvents(response.data);
+        setLoading(true);
+        // ask for published only; backend may ignore this param, which is fine
+        const { data } = await api.get("/events", { params: { limit: 500, published: 1 } });
+        // support either { items: [...] } or legacy [ ... ]
+        setEvents(Array.isArray(data) ? data : (data.items || []));
       } catch (err) {
         setError("Failed to load events.");
       } finally {
@@ -29,21 +37,26 @@ const EventsPage = () => {
     fetchEvents();
   }, []);
 
+  // Filter by simple categories (keep your existing buttons)
   const filteredEvents = events.filter((event) => {
-    if (filter === "feast")
+    const title = (event.title || event.name || "").toLowerCase();
+    const category = (event.category || "").toLowerCase();
+    if (filter === "feast") {
       return (
-        event.name.toLowerCase().includes("feast") ||
-        event.name.toLowerCase().includes("passover") ||
-        event.name.toLowerCase().includes("atonement") ||
-        event.name.toLowerCase().includes("tabernacles") ||
-        event.name.toLowerCase().includes("shavuot")
+        category === "feast" ||
+        /feast|passover|atonement|tabernacles|shavuot/.test(title)
       );
-    if (filter === "sabbath") return event.name.toLowerCase() === "sabbath";
+    }
+    if (filter === "sabbath") {
+      return category === "sabbath" || title === "sabbath";
+    }
     return true;
   });
 
+  // Group by calendar month (use new startDate; fallback to legacy date)
   const groupedEvents = filteredEvents.reduce((acc, event) => {
-    const key = dayjs.utc(event.date).local().format("MMMM YYYY");
+    const start = event.startDate || event.date; // legacy support
+    const key = dayjs.utc(start).local().format("MMMM YYYY");
     if (!acc[key]) acc[key] = [];
     acc[key].push(event);
     return acc;
@@ -109,23 +122,28 @@ const EventsPage = () => {
               🗓️ {month}
             </h2>
             <div className="space-y-6">
-              {groupedEvents[month].map((event) => (
-                <div
-                  key={event._id}
-                  className={`event-card ${
-                    event.name.toLowerCase() === "sabbath"
-                      ? "sabbath"
-                      : /feast|passover|atonement|tabernacles|shavuot/i.test(event.name)
-                      ? "feast"
-                      : "general"
-                  }`}
-                >
-                  <h2 className="text-xl font-semibold">{event.name}</h2>
+              {groupedEvents[month]
+                // sort inside the month by start time
+                .sort((a,b)=> dayjs(a.startDate || a.date).valueOf() - dayjs(b.startDate || b.date).valueOf())
+                .map((event) => {
+                  const start = event.startDate || event.date; // legacy support
+                  const isFeast = (event.category === "Feast") || /feast|passover|atonement|tabernacles|shavuot/i.test(event.title || event.name || "");
+                  const isSabbath = (event.category === "Sabbath") || /\bSabbath\b/i.test(event.title || event.name || "");
+                  const cardClass = isSabbath ? "sabbath" : (isFeast ? "feast" : "general");
+                  return (
+                    <div key={event._id} className={`event-card ${cardClass}`}>
+                      <h2 className="text-xl font-semibold">{event.title || event.name}</h2>
                  <p className="text-gray-600">
-                    🗓️ {dayjs.utc(event.date).format("MMMM D, YYYY")} @ {event.time}
+                        🗓️ {dayjs.utc(start).local().format("MMMM D, YYYY h:mm A")}
+                        {event.endDate && ` → ${dayjs.utc(event.endDate).local().format("h:mm A")}`}
+                        {event.time ? `  ·  ${event.time}` : ""}
                 </p>
-                  <p className="text-gray-600">📍 {event.location}</p>
+                      {(event.location || event.city || event.state || event.country) && (
+                        <p className="text-gray-600">📍 {[event.location, event.city, event.state, event.country].filter(Boolean).join(", ")}</p>
+                      )}
+                      {event.description && (
                   <p className="mt-2">{event.description}</p>
+                      )}
                   {event.link && (
                     <a
                       href={event.link}
@@ -137,7 +155,8 @@ const EventsPage = () => {
                     </a>
                   )}
                 </div>
-              ))}
+                  );
+                })}
             </div>
           </div>
         ))}
