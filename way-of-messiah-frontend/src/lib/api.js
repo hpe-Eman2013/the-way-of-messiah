@@ -9,6 +9,12 @@ export const api = axios.create({
   withCredentials: true, // send cookies for admin auth
   headers: { "Content-Type": "application/json" },
 });
+// after creating `api` (axios instance)
+api.interceptors.request.use((config) => {
+  const t = localStorage.getItem("jwt");
+  if (t) config.headers.Authorization = `Bearer ${t}`;
+  return config;
+});
 
 export const eventsApi = {
   async listEvents(q = {}) {
