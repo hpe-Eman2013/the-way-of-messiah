@@ -9,8 +9,14 @@ export const api = axios.create({
   withCredentials: true, // send cookies for admin auth
   headers: { "Content-Type": "application/json" },
 });
-// after creating `api` (axios instance)
+// 🔐 Attach JWT from localStorage automatically for protected routes (POST/PUT/DELETE)
 api.interceptors.request.use((config) => {
+  // support legacy key 'adminToken' then prefer 'jwt'
+  const legacy = localStorage.getItem("adminToken");
+  if (legacy && !localStorage.getItem("jwt")) {
+    localStorage.setItem("jwt", legacy);
+    localStorage.removeItem("adminToken");
+  }
   const t = localStorage.getItem("jwt");
   if (t) config.headers.Authorization = `Bearer ${t}`;
   return config;
