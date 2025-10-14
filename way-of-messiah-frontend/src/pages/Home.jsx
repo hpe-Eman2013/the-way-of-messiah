@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import Header from "../components/Header";
 import backgroundImage from "../assets/middle-east-wheat.jpg";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
