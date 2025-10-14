@@ -10,6 +10,7 @@ import utc from "dayjs/plugin/utc";
 import { api } from "../lib/api"; // <-- shared axios instance
 
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import "../assets/css/EventsPage.css";
 
 dayjs.extend(utc);
@@ -25,9 +26,11 @@ const EventsPage = () => {
       try {
         setLoading(true);
         // ask for published only; backend may ignore this param, which is fine
-        const { data } = await api.get("/events", { params: { limit: 500, published: 1 } });
+        const { data } = await api.get("/events", {
+          params: { limit: 500, published: 1 },
+        });
         // support either { items: [...] } or legacy [ ... ]
-        setEvents(Array.isArray(data) ? data : (data.items || []));
+        setEvents(Array.isArray(data) ? data : data.items || []);
       } catch (err) {
         setError("Failed to load events.");
       } finally {
@@ -124,43 +127,78 @@ const EventsPage = () => {
             <div className="space-y-6">
               {groupedEvents[month]
                 // sort inside the month by start time
-                .sort((a,b)=> dayjs(a.startDate || a.date).valueOf() - dayjs(b.startDate || b.date).valueOf())
+                .sort(
+                  (a, b) =>
+                    dayjs(a.startDate || a.date).valueOf() -
+                    dayjs(b.startDate || b.date).valueOf()
+                )
                 .map((event) => {
                   const start = event.startDate || event.date; // legacy support
-                  const isFeast = (event.category === "Feast") || /feast|passover|atonement|tabernacles|shavuot/i.test(event.title || event.name || "");
-                  const isSabbath = (event.category === "Sabbath") || /\bSabbath\b/i.test(event.title || event.name || "");
-                  const cardClass = isSabbath ? "sabbath" : (isFeast ? "feast" : "general");
+                  const isFeast =
+                    event.category === "Feast" ||
+                    /feast|passover|atonement|tabernacles|shavuot/i.test(
+                      event.title || event.name || ""
+                    );
+                  const isSabbath =
+                    event.category === "Sabbath" ||
+                    /\bSabbath\b/i.test(event.title || event.name || "");
+                  const cardClass = isSabbath
+                    ? "sabbath"
+                    : isFeast
+                    ? "feast"
+                    : "general";
                   return (
                     <div key={event._id} className={`event-card ${cardClass}`}>
-                      <h2 className="text-xl font-semibold">{event.title || event.name}</h2>
-                 <p className="text-gray-600">
-                        🗓️ {dayjs.utc(start).local().format("MMMM D, YYYY h:mm A")}
-                        {event.endDate && ` → ${dayjs.utc(event.endDate).local().format("h:mm A")}`}
+                      <h2 className="text-xl font-semibold">
+                        {event.title || event.name}
+                      </h2>
+                      <p className="text-gray-600">
+                        🗓️{" "}
+                        {dayjs.utc(start).local().format("MMMM D, YYYY h:mm A")}
+                        {event.endDate &&
+                          ` → ${dayjs
+                            .utc(event.endDate)
+                            .local()
+                            .format("h:mm A")}`}
                         {event.time ? `  ·  ${event.time}` : ""}
-                </p>
-                      {(event.location || event.city || event.state || event.country) && (
-                        <p className="text-gray-600">📍 {[event.location, event.city, event.state, event.country].filter(Boolean).join(", ")}</p>
+                      </p>
+                      {(event.location ||
+                        event.city ||
+                        event.state ||
+                        event.country) && (
+                        <p className="text-gray-600">
+                          📍{" "}
+                          {[
+                            event.location,
+                            event.city,
+                            event.state,
+                            event.country,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
                       )}
                       {event.description && (
-                  <p className="mt-2">{event.description}</p>
+                        <p className="mt-2">{event.description}</p>
                       )}
-                  {event.link && (
-                    <a
-                      href={event.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block mt-3 text-blue-600 hover:underline"
-                    >
-                      🔗 More Info / RSVP
-                    </a>
-                  )}
-                </div>
+                      {event.link && (
+                        <a
+                          href={event.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-3 text-blue-600 hover:underline"
+                        >
+                          🔗 More Info / RSVP
+                        </a>
+                      )}
+                    </div>
                   );
                 })}
             </div>
           </div>
         ))}
       </div>
+      <Footer />
     </div>
   );
 };
