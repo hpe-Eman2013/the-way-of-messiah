@@ -29,6 +29,8 @@ router.get("/", async (req, res) => {
       ];
     }
     if (req.query.category) q.category = req.query.category;
+    // 👇 Optional: only published when ?published=1 is present
+    if (req.query.published) q.isPublished = true;
 
     const [items, total] = await Promise.all([
       Event.find(q)
