@@ -16,6 +16,7 @@ import DonationCancel from "./pages/DonationCancel";
 import DonateThankYou from "./pages/DonateThankYou";
 import AdminEventsList from "./pages/admin/AdminEventsList";
 import AdminEventForm from "./pages/admin/AdminEventForm";
+import "../src/assets/css/index.css";
 
 // Inside <Routes>:
 
