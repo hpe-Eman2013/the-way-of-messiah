@@ -53,11 +53,11 @@ export default function Home() {
                   accountability and self-governance. During the first century,
                   the believers could not use the Synagogue as a place of
                   worship and spiritual education, as they were persecuted by
-                  the Jewish leaders, who did not acknowledge or accept Yahusha
-                  as the Messiah. Therefore, they met in the homes of each other
-                  and were trained in the doctrine of Yahusha, the Son of Yahuah
-                  (or Yahuah, the Almighty One), as they preached the Gospel
-                  from house to house.
+                  the religious leaders, who did not acknowledge or accept
+                  Yahusha as the Messiah. Therefore, they met in the homes of
+                  each other and were trained in the doctrine of Yahusha, the
+                  Son of Yahuah (or Yahuah, the Almighty One), as they preached
+                  the Gospel from house to house.
                 </p>
               </div>
 
