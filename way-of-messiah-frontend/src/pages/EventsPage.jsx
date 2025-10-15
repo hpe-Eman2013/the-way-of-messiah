@@ -142,57 +142,50 @@ const EventsPage = () => {
                   const isSabbath =
                     event.category === "Sabbath" ||
                     /\bSabbath\b/i.test(event.title || event.name || "");
-                  const cardClass = isSabbath
-                    ? "sabbath"
-                    : isFeast
-                    ? "feast"
-                    : "general";
-                  return (
-                    <div key={event._id} className={`event-card ${cardClass}`}>
-                      <h2 className="text-xl font-semibold">
-                        {event.title || event.name}
-                      </h2>
-                      <p className="text-gray-600">
-                        🗓️{" "}
-                        {dayjs.utc(start).local().format("MMMM D, YYYY h:mm A")}
-                        {event.endDate &&
-                          ` → ${dayjs
-                            .utc(event.endDate)
-                            .local()
-                            .format("h:mm A")}`}
-                        {event.time ? `  ·  ${event.time}` : ""}
-                      </p>
-                      {(event.location ||
-                        event.city ||
-                        event.state ||
-                        event.country) && (
-                        <p className="text-gray-600">
-                          📍{" "}
-                          {[
-                            event.location,
-                            event.city,
-                            event.state,
-                            event.country,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      )}
-                      {event.description && (
-                        <p className="mt-2">{event.description}</p>
-                      )}
-                      {event.link && (
-                        <a
-                          href={event.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block mt-3 text-blue-600 hover:underline"
-                        >
-                          🔗 More Info / RSVP
-                        </a>
-                      )}
-                    </div>
-                  );
+  const cardClass = isSabbath ? "sabbath" : isFeast ? "feast" : "general";
+
+  // 👇 add this line
+  const desc =
+    event.description ||
+    event.details ||
+    event.note ||
+    event.body ||
+    event.summary ||
+    "";
+
+  return (
+    <div key={event._id} className={`event-card ${cardClass}`}>
+      <h2 className="text-xl font-semibold">{event.title || event.name}</h2>
+      <p className="text-gray-600">
+        🗓️ {dayjs.utc(start).local().format("MMMM D, YYYY h:mm A")}
+        {event.endDate &&
+          ` → ${dayjs.utc(event.endDate).local().format("h:mm A")}`}
+        {event.time ? `  ·  ${event.time}` : ""}
+      </p>
+      {(event.location || event.city || event.state || event.country) && (
+        <p className="text-gray-600">
+          📍{" "}
+          {[event.location, event.city, event.state, event.country]
+            .filter(Boolean)
+            .join(", ")}
+        </p>
+      )}
+
+      {/* 👇 render the tolerant description */}
+      {desc && <p className="mt-2 whitespace-pre-wrap">{desc}</p>}
+
+      {event.link && (
+        <a
+          href={event.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block mt-3 text-blue-600 hover:underline"
+        >
+          🔗 More Info / RSVP
+        </a>
+      )}
+    </div>
+  );
                 })}
             </div>
           </div>

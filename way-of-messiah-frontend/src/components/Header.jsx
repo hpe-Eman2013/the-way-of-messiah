@@ -14,7 +14,10 @@ export default function Header() {
               alt="The Way of Messiah"
               className="h-10 w-10 rounded-full object-cover"
             />
-            <span className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            <span
+              className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-white px-2 py-0.5 rounded
+                 bg-white/70 dark:bg-neutral-900/60"
+            >
               The Way of Messiah
             </span>
           </Link>
@@ -24,11 +27,14 @@ export default function Header() {
             <NavLink
               to="/"
               className={({ isActive }) =>
-                isActive ? "text-black" : "text-gray-700 hover:text-black"
+                isActive
+                  ? "text-neutral-900 dark:text-white"
+                  : "text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
               }
             >
               Home
             </NavLink>
+
             <NavLink
               to="/events"
               className={({ isActive }) =>
