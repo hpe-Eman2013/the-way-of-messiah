@@ -20,6 +20,7 @@ const equinoxRoute = require("./routes/equinox");
 const calendarDownload = require("./routes/calendarDownload");
 const eventsRouter = require("./routes/events");
 const uploadRouter = require("./routes/uploads");
+const adminCalendar = require("./routes/adminCalendar");
 
 // Middleware
 app.use(
@@ -51,6 +52,7 @@ app.use("/api", require("./routes/testimonies"));
 app.use("/api", require("./routes/events"));
 app.use("/api/explanations", explanationsRoute);
 app.use("/api/equinox", equinoxRoute);
+app.use("/api/admin", adminCalendar);
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, "public", "uploads");

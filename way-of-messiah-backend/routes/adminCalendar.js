@@ -1,30 +1,33 @@
-// routes/adminCalendar.js
-const router = require("express").Router();
-const dayjs = require("dayjs");
-const verifyToken = require("../middleware/verifyToken");
-const Event = require("../models/Event");
+// backend/routes/adminCalendar.js
+const router = require('express').Router();
+const verifyToken = require('../middleware/verifyToken');
+const dayjs = require('dayjs');
+const { getDayOneUtc } = require('../utils/equinox');
+const Event = require('../models/Event');
 
-router.post("/calendar/seed", verifyToken, async (req, res) => {
-  const { year, equinox } = req.body; // YYYY, YYYY-MM-DD
-  if (!year || !equinox) return res.status(400).json({ error: "year and equinox required" });
-  const y = parseInt(year, 10);
-  const day1 = dayjs(equinox).add(1, "day").startOf("day");
+router.post('/calendar/seed', verifyToken, async (req, res) => {
+  const { year, tz } = req.body || {};
+  if (!year) return res.status(400).json({ error: 'year required' });
 
-  const bulk = [];
+  const timeZone = tz || process.env.CALENDAR_TZ || 'America/New_York';
+  const day1Utc = getDayOneUtc(parseInt(year, 10), timeZone);
+
+  const ops = [];
   for (let i = 1; i <= 364; i++) {
-    bulk.push({
+    const start = dayjs(day1Utc).add(i - 1, 'day').toDate();
+    ops.push({
       updateOne: {
-        filter: { year: y, dayNumber: i },
+        filter: { year: parseInt(year, 10), dayNumber: i },
         update: {
-          $setOnInsert: { category: "Calendar" },
-          $set: { title: `Day ${i}`, year: y, dayNumber: i, startDate: day1.add(i - 1, "day").toDate(), isPublished: true }
+          $setOnInsert: { category: 'Calendar' },
+          $set: { title: `Day ${i}`, year: parseInt(year, 10), dayNumber: i, startDate: start, isPublished: true },
         },
-        upsert: true
-      }
+        upsert: true,
+      },
     });
   }
-  await Event.bulkWrite(bulk, { ordered: false });
-  res.json({ ok: true, message: `Seeded ${y}` });
+  await Event.bulkWrite(ops, { ordered: false });
+  res.json({ ok: true, seeded: ops.length, day1Utc });
 });
 
 module.exports = router;

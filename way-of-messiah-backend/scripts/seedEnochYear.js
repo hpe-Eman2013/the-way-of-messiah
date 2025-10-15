@@ -1,44 +1,71 @@
-require("dotenv").config({ path: ".env.development" }); // or .env.production
+// Usage: node scripts/seedEnochYear.js 2025 [America/New_York]
+// If you pass CALENDAR_TZ in env, you can omit the second arg.
+require("dotenv").config({
+  path:
+    process.env.NODE_ENV === "production"
+      ? ".env.production"
+      : ".env.development",
+});
+
 const mongoose = require("mongoose");
 const dayjs = require("dayjs");
-const Event = require("../models/Event");
+const { getDayOneUtc } = require("../utils/equinox");
+const Event = require("../models/Event"); // adjust path if needed
 
 async function run() {
-  const [ , , yearStr, equinoxStr ] = process.argv;
-  if (!yearStr || !equinoxStr) {
-    console.error("Usage: node scripts/seedEnochYear.js <YEAR> <EQUINOX_YYYY-MM-DD>");
+  const [, , yearArg, tzArg] = process.argv;
+  if (!yearArg) {
+    console.error("Usage: node scripts/seedEnochYear.js <YEAR> [IANA_TZ]");
     process.exit(1);
   }
-  const year = parseInt(yearStr, 10);
-  const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
-  if (!MONGODB_URI) throw new Error("MONGODB_URI missing");
+  const year = parseInt(yearArg, 10);
+  const timeZone = tzArg || process.env.CALENDAR_TZ || "America/New_York";
 
-  await mongoose.connect(MONGODB_URI);
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (!uri) throw new Error("Missing MONGODB_URI");
 
-  const equinox = dayjs(equinoxStr);
-  const day1 = equinox.add(1, "day").startOf("day");
+  await mongoose.connect(uri);
 
+  const day1Utc = getDayOneUtc(year, timeZone); // JS Date (UTC midnight of local day 1)
+  console.log(
+    `Seeding year ${year}. Day 1 (local midnight in ${timeZone}) = ${dayjs(
+      day1Utc
+    )
+      .utc()
+      .format()}`
+  );
+
+  const ops = [];
   for (let i = 1; i <= 364; i++) {
-    const start = day1.add(i - 1, "day").toDate();
-    const title = `Day ${i}`;
-    await Event.updateOne(
-      { year, dayNumber: i },
-      {
-        $setOnInsert: { category: "Calendar" },
-        $set: {
-          title,
-          year,
-          dayNumber: i,
-          startDate: start,
-          isPublished: true,
+    const start = dayjs(day1Utc)
+      .add(i - 1, "day")
+      .toDate();
+    ops.push({
+      updateOne: {
+        filter: { year, dayNumber: i },
+        update: {
+          $setOnInsert: { category: "Calendar" },
+          $set: {
+            title: `Day ${i}`,
+            year,
+            dayNumber: i,
+            startDate: start,
+            isPublished: true,
+          },
         },
+        upsert: true,
       },
-      { upsert: true }
-    );
+    });
   }
 
-  console.log(`Seeded/Upserted ${year} Enoch year from ${equinoxStr} (Day 1 = ${day1.format("YYYY-MM-DD")}).`);
+  if (ops.length) {
+    await Event.bulkWrite(ops, { ordered: false });
+  }
+  console.log(`Seeded/Upserted ${ops.length} events for ${year}.`);
   await mongoose.disconnect();
 }
 
-run().catch((e) => { console.error(e); process.exit(1); });
+run().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
