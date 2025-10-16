@@ -105,7 +105,7 @@ export default function AdminEventsList() {
               </thead>
               <tbody>
                 {items.map((e) => (
-                  <tr key={e._id} className="border-t">
+                  <tr key={e.id ?? e._id} className="border-t">
                     <td className="p-3 font-medium">{e.title}</td>
                     <td className="p-3">{e.category || "-"}</td>
                     <td className="p-3">
@@ -120,13 +120,15 @@ export default function AdminEventsList() {
                     <td className="p-3 text-right">
                       <div className="inline-flex gap-2">
                         <button
-                          onClick={() => navigate(`/admin/events/${e._id}`)}
+                          onClick={() =>
+                            navigate(`/admin/events/${e.id ?? e._id}`)
+                          }
                           className="px-3 py-1 rounded border"
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => onDelete(e._id)}
+                          onClick={() => onDelete(e.id ?? e._id)}
                           className="px-3 py-1 rounded border text-red-600"
                         >
                           Delete

@@ -56,7 +56,36 @@ router.get("/:id", async (req, res) => {
     res.status(404).json({ error: "Not found" });
   }
 });
+// Get /events/published
+router.get("/events", async (req, res) => {
+  try {
+    const docs = await Event.find({ isPublished: true }).lean();
 
+    const out = docs.map(e => ({
+      id: e.id.toString() ?? e._id.toString(),
+      title: e.title,
+      category: e.category,
+      description: e.description ?? "",
+      location: e.location ?? "",
+      link: e.link ?? "",
+      time: e.time ?? "",
+
+      // Canonical, timezone-safe day fields for the calendar grid:
+      dateISO: e.date ? new Date(e.date).toISOString() : null,
+      dateYmd: e.date ? new Date(e.date).toISOString().slice(0, 10) : null,
+
+      // Only include timed fields if they actually exist (for announcements)
+      ...(e.startDate ? { startDateISO: new Date(e.startDate).toISOString() } : {}),
+      ...(e.endDate   ? { endDateISO:   new Date(e.endDate).toISOString() } : {}),
+      ...(e.timezone  ? { timezone: e.timezone } : {}),
+    }));
+
+    res.json(out);
+  } catch (err) {
+    console.error("GET /events failed:", err);
+    res.status(500).json({ error: "Failed to load events" });
+  }
+});
 // Create (admin only)
 router.post("/", verifyToken, async (req, res) => {
   try {

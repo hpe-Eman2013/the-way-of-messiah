@@ -70,20 +70,23 @@ const CalendarView = () => {
     );
 
     if (feastEvents.length === 0 && sabbathEvents.length > 0) {
-      const sabbathInfo = explanations.find(
-        (e) => {
-          if (Array.isArray(e.description)) {
-            return e.description.some(d => d.toLowerCase().includes("sabbath"));
-          }
-          return typeof e.description === 'string' && e.description.toLowerCase().includes("sabbath");
+      const sabbathInfo = explanations.find((e) => {
+        if (Array.isArray(e.description)) {
+          return e.description.some((d) => d.toLowerCase().includes("sabbath"));
         }
-      );
+        return (
+          typeof e.description === "string" &&
+          e.description.toLowerCase().includes("sabbath")
+        );
+      });
       if (!sabbathInfo) return <p>No explanation found for Sabbath.</p>;
 
       return (
         <ul className="list-disc pl-5 space-y-1">
           {sabbathInfo.restrictions.map((r, idx) => (
-            <li key={idx}><strong>{r}</strong></li>
+            <li key={idx}>
+              <strong>{r}</strong>
+            </li>
           ))}
         </ul>
       );
@@ -93,26 +96,38 @@ const CalendarView = () => {
 
     return feastEvents.map((e) => {
       const feastTag = Array.isArray(e.description)
-        ? e.description.find(d => isFeast(d))
-        : isFeast(e.description) ? e.description : null;
+        ? e.description.find((d) => isFeast(d))
+        : isFeast(e.description)
+        ? e.description
+        : null;
 
       const info = explanations.find(
         (x) => feastTag && x.name.toLowerCase() === feastTag.toLowerCase()
       );
       return (
-        <div key={e._id} className="mb-3">
-          <p className="font-bold">{dayjs(e.date).format("YYYY-MM-DD")}: {feastTag}</p>
-          <p><strong>Purpose:</strong> {info?.purpose || "—"}</p>
+        <div key={e.id ?? e._id} className="mb-3">
+          <p className="font-bold">
+            {dayjs(e.date).format("YYYY-MM-DD")}: {feastTag}
+          </p>
+          <p>
+            <strong>Purpose:</strong> {info?.purpose || "—"}
+          </p>
           {info?.restrictions?.length > 0 && (
             <>
-              <p><strong>Restrictions:</strong></p>
+              <p>
+                <strong>Restrictions:</strong>
+              </p>
               <ul className="list-disc pl-5">
-                {info.restrictions.map((r, idx) => <li key={idx}>{r}</li>)}
+                {info.restrictions.map((r, idx) => (
+                  <li key={idx}>{r}</li>
+                ))}
               </ul>
             </>
           )}
           {info?.customs && (
-            <p><strong>Customs:</strong> {info.customs}</p>
+            <p>
+              <strong>Customs:</strong> {info.customs}
+            </p>
           )}
         </div>
       );
@@ -133,7 +148,7 @@ const CalendarView = () => {
         return isSabbathEvent(e) ? "sabbath" : isFeastEvent(e) ? "feast" : "";
       });
       const calculateEnochDay = (date) => {
-        const lastEnochDay = events.find(e => e.name === "Day 364");
+        const lastEnochDay = events.find((e) => e.name === "Day 364");
         const fallbackEquinox = (() => {
           const year = selectedMonth.year();
           const beforeMarch20 = date.isBefore(dayjs(`${year}-03-20`));
@@ -147,7 +162,10 @@ const CalendarView = () => {
         if (date.isBefore(firstCycleStart)) return null;
 
         const daysSinceFirst = date.diff(firstCycleStart, "day");
-        const currentCycleStart = firstCycleStart.add(Math.floor(daysSinceFirst / 364) * 364, "day");
+        const currentCycleStart = firstCycleStart.add(
+          Math.floor(daysSinceFirst / 364) * 364,
+          "day"
+        );
         const enochDay = date.diff(currentCycleStart, "day") + 1;
 
         return enochDay > 364 ? null : enochDay;
@@ -159,9 +177,11 @@ const CalendarView = () => {
         <div key={i} className={`day ${classNames.join(" ")}`}>
           {isCurrentMonth && (
             <>
-              <div className="font-bold text-sm">{currentDate.format("MMM D")}</div>
+              <div className="font-bold text-sm">
+                {currentDate.format("MMM D")}
+              </div>
               {todayEvents.map((event) => (
-                <div key={event._id} className="text-xs mt-1">
+                <div key={event.id ?? event._id} className="text-xs mt-1">
                   <strong>{event.name}</strong>
                 </div>
               ))}

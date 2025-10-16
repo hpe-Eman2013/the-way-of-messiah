@@ -1,4 +1,7 @@
 // server.js
+process.env.TZ = "UTC";
+console.log("Node TZ:", Intl.DateTimeFormat().resolvedOptions().timeZone);
+
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");

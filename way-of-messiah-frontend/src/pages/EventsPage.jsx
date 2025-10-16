@@ -154,7 +154,7 @@ const EventsPage = () => {
     "";
 
   return (
-    <div key={event._id} className={`event-card ${cardClass}`}>
+    <div key={event.id ?? event._id} className={`event-card ${cardClass}`}>
       <h2 className="text-xl font-semibold">{event.title || event.name}</h2>
       <p className="text-gray-600">
         🗓️ {dayjs.utc(start).local().format("MMMM D, YYYY h:mm A")}

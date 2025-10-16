@@ -5,8 +5,10 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "start:dev": "dotenv -e .env.development -- node server.js",
-    "start:prod": "dotenv -e .env.production -- node server.js"
+    "dev": "cross-env TZ=UTC nodemon server.js",
+    "start": "cross-env TZ=UTC node server.js",
+    "start:dev": "cross-env TZ=UTC dotenv -e .env.development -- node server.js",
+    "start:prod": "cross-env TZ=UTC dotenv -e .env.production -- node server.js"
   },
   "dependencies": {
     "archiver": "^7.0.1",
@@ -30,6 +32,7 @@
     "stripe": "^12.18.0"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "dotenv-cli": "^7.4.4",
     "nodemon": "^3.1.10"
   }

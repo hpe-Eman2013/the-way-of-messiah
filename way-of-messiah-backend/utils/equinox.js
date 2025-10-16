@@ -3,9 +3,7 @@ const Astronomy = require('astronomy-engine'); // v2+
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const tz = require('dayjs/plugin/timezone');
-
-dayjs.extend(utc);
-dayjs.extend(tz);
+dayjs.extend(utc); dayjs.extend(tz);
 
 // Pick the timezone you want the calendar to follow, e.g., America/New_York
 const DEFAULT_TZ = process.env.CALENDAR_TZ || 'America/New_York';
@@ -24,10 +22,10 @@ function getMarchEquinoxUTC(year) {
  * the equinox) as a JS Date at local midnight, stored in UTC.
  */
 function getDayOneUtc(year, timeZone = DEFAULT_TZ) {
-  const eqUtc = getMarchEquinoxUTC(year);               // JS Date (UTC)
-  // move into local TZ, add 1 day, start of that day, then store as UTC
+  const eqUtc = getMarchEquinoxUTC(year);
+  // do startOf('day') in LOCAL time, then store as UTC
   const localDay1 = dayjs(eqUtc).tz(timeZone).add(1, 'day').startOf('day');
   return localDay1.utc().toDate();
 }
 
-module.exports = { getMarchEquinoxUTC, getDayOneUtc, DEFAULT_TZ };
+module.exports = { getDayOneUtc, getMarchEquinoxUTC, DEFAULT_TZ };
