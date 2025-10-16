@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -7,11 +7,22 @@ import "../assets/css/CalendarView.css";
 import { fetchEventsForMonth } from "../lib/calendarApi.js";
 
 dayjs.extend(utc);
+// --- A) HELPERS: add these at module scope (top of file, after imports) ---
+const keyFromEvent = (e) => e.dateYmd ?? e.dateISO?.slice(0, 10) ?? null;
+
+const groupByDay = (items) =>
+  items.reduce((acc, e) => {
+    const k = keyFromEvent(e);
+    if (!k) return acc;
+    (acc[k] ||= []).push(e);
+    return acc;
+  }, {});
 
 const CalendarView = () => {
   const [springEquinox, setSpringEquinox] = useState(null);
   const [events, setEvents] = useState([]);
-
+  // --- Add this memo AFTER events is declared ---
+  const byDay = useMemo(() => groupByDay(events), [events]);
   // --- Print mode & query params ---
   const params = new URLSearchParams(window.location.search);
   const printMode = params.get("print") === "1";
@@ -26,6 +37,8 @@ const CalendarView = () => {
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [panelReady, setPanelReady] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   // Toggle this flag to enable/disable the Download button globally
   const DOWNLOAD_ENABLED = false;
   const BASE_URL = import.meta.env.VITE_API_URL;
