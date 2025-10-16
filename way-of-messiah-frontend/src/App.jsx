@@ -17,7 +17,7 @@ import DonateThankYou from "./pages/DonateThankYou";
 import AdminEventsList from "./pages/admin/AdminEventsList";
 import AdminEventForm from "./pages/admin/AdminEventForm";
 import "../src/assets/css/index.css";
-
+import EventsList from "./pages/EventsList.jsx";
 // Inside <Routes>:
 
 function App() {
@@ -42,6 +42,7 @@ function App() {
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/testimonies" element={<Testimonies />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/list" element={<EventsList />} />
         <Route path="/calendar-view" element={<CalendarView />} />
         <Route path="/donate" element={<DonatePage />} />
         <Route path="/donate/success" element={<DonationSuccess />} />
