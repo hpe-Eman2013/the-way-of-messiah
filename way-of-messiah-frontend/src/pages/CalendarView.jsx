@@ -20,6 +20,12 @@ const groupByDay = (items) => {
     return acc;
   }, {});
 };
+// Extract "N" from titles like "Day 1", "Day 12", case/space tolerant
+const parseDayNumber = (title) => {
+  const m = String(title || "").match(/^day\s*(\d{1,3})$/i);
+  return m ? parseInt(m[1], 10) : null;
+};
+
 
 const CalendarView = () => {
   const [springEquinox, setSpringEquinox] = useState(null);
@@ -141,35 +147,47 @@ const CalendarView = () => {
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDateUTC) : [];
 
       const calculateEnochDay = (dateUTC) => {
-        // 1) Prefer Day 1 from events in this month
-        const day1 = events.find((e) => e.title === "Day 1");
-        if (day1) {
-          const d1 = dayjs.utc(keyFromEvent(day1)); // keyFromEvent gives YYYY-MM-DD
-          if (dateUTC.isBefore(d1)) return null;
-          const n = dateUTC.diff(d1, "day") + 1;
-          return n >= 1 && n <= 364 ? n : null;
-        }
+  // collect all "Day N" events we have for this month
+  const dayEvents = (Array.isArray(events) ? events : [])
+    .map(e => {
+      const num = parseDayNumber(e.title);
+      const ymd = keyFromEvent(e);
+      return num && ymd ? { num, ymd } : null;
+    })
+    .filter(Boolean);
 
-        // 2) Next best: Day 364 in this month → Day 1 is the next day
-        const d364 = events.find((e) => e.title === "Day 364");
-        if (d364) {
-          const start = dayjs.utc(keyFromEvent(d364)).add(1, "day");
-          if (dateUTC.isBefore(start)) return null;
-          const n = dateUTC.diff(start, "day") + 1;
-          return n >= 1 && n <= 364 ? n : null;
-        }
+  // If we have any Day N in view, derive the anchor robustly
+  if (dayEvents.length) {
+    // Prefer an explicit Day 1 if present
+    const day1 = dayEvents.find(d => d.num === 1);
+    if (day1) {
+      const anchor = dayjs.utc(day1.ymd); // Day 1 date
+      if (dateUTC.isBefore(anchor)) return null;
+      const n = dateUTC.diff(anchor, "day") + 1;
+      return n >= 1 && n <= 364 ? n : null;
+    }
+    // Otherwise derive Day 1 from any Day N we do have
+    // (pick the earliest date so month boundaries behave nicely)
+    const byDateAsc = [...dayEvents].sort((a, b) => a.ymd.localeCompare(b.ymd));
+    const ref = byDateAsc[0];
+    const anchor = dayjs.utc(ref.ymd).subtract(ref.num - 1, "day"); // back-calc Day 1
+    if (dateUTC.isBefore(anchor)) return null;
+    const n = dateUTC.diff(anchor, "day") + 1;
+    return n >= 1 && n <= 364 ? n : null;
+  }
 
-        // 3) Last resort: if springEquinox exists, Day 1 = equinox + 1
-        if (springEquinox) {
-          const start = dayjs.utc(springEquinox).add(1, "day");
-          if (dateUTC.isBefore(start)) return null;
-          const n = dateUTC.diff(start, "day") + 1;
-          return n >= 1 && n <= 364 ? n : null;
-        }
+  // Fallback if no Day N events are available: use equinox if present
+  if (springEquinox) {
+    const anchor = dayjs.utc(springEquinox).add(1, "day"); // Day 1 = equinox + 1
+    if (dateUTC.isBefore(anchor)) return null;
+    const n = dateUTC.diff(anchor, "day") + 1;
+    return n >= 1 && n <= 364 ? n : null;
+  }
 
-        // no basis → don't label
-        return null;
-      };
+  // No basis → no label
+  return null;
+};
+
 
 
       const enochDay = calculateEnochDay(currentDateUTC);
