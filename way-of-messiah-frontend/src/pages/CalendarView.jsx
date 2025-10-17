@@ -16,7 +16,23 @@ const toYmd = (v) => {
   // if somehow a Date object slipped through
   try { return dayjs.utc(v).format("YYYY-MM-DD"); } catch { return null; }
 };
+const normalizeEvent = (e) => {
+  const id = (e?.id ?? e?._id ?? "").toString();
+  const title = e?.title ?? e?.name ?? ""; // tolerate 'name'
+  const dateYmd =
+    e?.dateYmd ??
+    toYmd(e?.dateISO) ??
+    toYmd(e?.date) ??
+    toYmd(e?.startDate) ??
+    null;
 
+  return {
+    ...e,
+    id,
+    title,
+    dateYmd,
+  };
+};
 const keyFromEvent = (e) =>
   e?.dateYmd ??
   toYmd(e?.dateISO) ??
@@ -76,8 +92,12 @@ export default function CalendarView() {
     let cancel = false;
     (async () => {
       try {
-        const data = await fetchEventsForMonth(selectedMonth.year(), selectedMonth.month());
-        if (!cancel) setEvents(Array.isArray(data) ? data : []);
+        const raw = await fetchEventsForMonth(
+          selectedMonth.year(),
+          selectedMonth.month()
+        );
+        const safe = Array.isArray(raw) ? raw.map(normalizeEvent) : [];
+        if (!cancel) setEvents(safe);
       } catch (e) {
         console.error("Error fetching events:", e);
         if (!cancel) setEvents([]);
@@ -85,7 +105,9 @@ export default function CalendarView() {
 
       try {
         const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-        const res = await axios.get(`${BASE}/api/equinox?year=${selectedMonth.year()}`);
+        const res = await axios.get(
+          `${BASE}/api/equinox?year=${selectedMonth.year()}`
+        );
         const ymd = res?.data?.equinoxYmd ?? res?.data?.springEquinox ?? null;
         if (!cancel) setSpringEquinox(ymd);
       } catch (err) {
@@ -97,14 +119,18 @@ export default function CalendarView() {
         }
       }
     })();
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+    };
   }, [selectedMonth]);
 
   // ---- Determine a single Day 1 anchor from available data
   const enochAnchor = useMemo(() => {
     const list = Array.isArray(events) ? events : [];
     // Prefer explicit Day 1
-    const d1 = list.find((e) => parseDayNumber(getTitle(e)) === 1 && keyFromEvent(e));
+    const d1 = list.find(
+      (e) => parseDayNumber(getTitle(e)) === 1 && keyFromEvent(e)
+    );
     if (d1) return dayjs.utc(keyFromEvent(d1));
     // Else derive from any Day N (earliest by date)
     const anyDay = list
@@ -151,31 +177,47 @@ export default function CalendarView() {
 
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDateUTC) : [];
       const enochDay = calculateEnochDay(currentDateUTC);
-      
-      // ---- Coloring rules
-      const hasSabbathEvent = todayEvents.some((e) => /sabbath/i.test(getTitle(e)));
-      const hasFeastEvent = todayEvents.some((e) => /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(getTitle(e)));
 
-      const base = "calendar-cell border p-2 min-h-[90px] flex flex-col bg-white";
-      const sabbathCls = hasSabbathEvent ? " ring-2 ring-purple-500 bg-purple-50" : "";
-      const feastCls = hasFeastEvent ? " ring-2 ring-emerald-600 bg-emerald-50" : "";
+      // ---- Coloring rules
+      const hasSabbathEvent = todayEvents.some((e) =>
+        /sabbath/i.test(getTitle(e))
+      );
+      const hasFeastEvent = todayEvents.some((e) =>
+        /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(
+          getTitle(e)
+        )
+      );
+
+      const base =
+        "calendar-cell border p-2 min-h-[90px] flex flex-col bg-white";
+      const sabbathCls = hasSabbathEvent
+        ? " ring-2 ring-purple-500 bg-purple-50"
+        : "";
+      const feastCls = hasFeastEvent
+        ? " ring-2 ring-emerald-600 bg-emerald-50"
+        : "";
       const outsideCls = !isCurrentMonth ? " opacity-40" : "";
       const cellClass = `${base}${sabbathCls}${feastCls}${outsideCls}`;
 
       // Hide raw "Day N" events (we display computed label instead)
-      const displayEvents = todayEvents.filter((e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e)));
+      const displayEvents = todayEvents.filter(
+        (e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e))
+      );
 
       const key = currentDateUTC.format("YYYY-MM-DD");
       cells.push(
         <div key={key} className={cellClass}>
-          <div className="text-xs font-semibold">{currentDateLabel.format("MMM D")}</div>
+          <div className="text-xs font-semibold">
+            {currentDateLabel.format("MMM D")}
+          </div>
           {enochDay ? (
             <div className="text-xs mt-1 font-semibold">Day {enochDay}</div>
           ) : null}
           {displayEvents.map((event, idx) => {
-            const label = Array.isArray(event.description) && event.description.length
+            const label =
+              Array.isArray(event.description) && event.description.length
                 ? event.description.join(", ")
-              : getTitle(event);
+                : getTitle(event);
             return (
               <div key={event.id ?? event._id ?? idx} className="text-xs mt-1">
                 <strong>{label}</strong>
@@ -191,16 +233,36 @@ export default function CalendarView() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goPrevMonth} className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded">← Prev</button>
-        <button onClick={goToday} className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded">Today</button>
-        <button onClick={goNextMonth} className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded">Next →</button>
-        <div className="ml-3 text-sm text-gray-600">{selectedMonth.format("YYYY-MM")}</div>
+        <button
+          onClick={goPrevMonth}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded"
+        >
+          ← Prev
+        </button>
+        <button
+          onClick={goToday}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded"
+        >
+          Today
+        </button>
+        <button
+          onClick={goNextMonth}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded"
+        >
+          Next →
+        </button>
+        <div className="ml-3 text-sm text-gray-600">
+          {selectedMonth.format("YYYY-MM")}
+        </div>
       </div>
 
       <div className="grid grid-cols-7 gap-px bg-gray-300">{renderCells()}</div>
 
       {/* Explanation panel hides itself on 404/empty (see its guarded version) */}
-      <ExplanationPanel year={selectedMonth.year()} month={selectedMonth.month() + 1} />
+      <ExplanationPanel
+        year={selectedMonth.year()}
+        month={selectedMonth.month() + 1}
+      />
     </div>
   );
 }
