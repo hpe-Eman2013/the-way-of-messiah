@@ -10,7 +10,7 @@ dayjs.extend(utc);
 /* ----------------- Helpers ----------------- */
 
 // Accept title from either `title` or `name`
-const getTitle = (e) => (e?.title ?? e?.name ?? "");
+const getTitle = (e) => e?.title ?? e?.name ?? "";
 
 // Parse "Day N" from titles like "Day 1", "day 12", etc.
 const parseDayNumber = (t) => {
@@ -22,7 +22,11 @@ const parseDayNumber = (t) => {
 const toYmd = (v) => {
   if (!v) return null;
   if (typeof v === "string") return v.slice(0, 10);
-  try { return dayjs.utc(v).format("YYYY-MM-DD"); } catch { return null; }
+  try {
+    return dayjs.utc(v).format("YYYY-MM-DD");
+  } catch {
+    return null;
+  }
 };
 
 // Normalize events so we can rely on `id`, `title`, and `dateYmd`
@@ -56,7 +60,23 @@ const groupByDay = (items) => {
     return acc;
   }, {});
 };
-
+// Weekday Helper
+const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+// Feast Helper
+const isFeastTitle = (t) =>
+  /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(
+    String(t || "")
+  );
+// Sabbath Helper
+const isSabbathTitle = (t) => /sabbath/i.test(String(t || ""));
 export default function CalendarView() {
   // ---- Optional ?year=YYYY&month=M in URL
   const params = new URLSearchParams(window.location.search);
@@ -250,7 +270,23 @@ export default function CalendarView() {
           getTitle(e)
         )
       );
+      // badges shown under the date & Day N label
+      const sabbathBadge = hasSabbathEvent ? (
+        <span className="inline-block text-[10px] px-1 py-0.5 rounded bg-purple-600 text-white">
+          Sabbath
+        </span>
+      ) : null;
 
+      const feastBadges = todayEvents
+        .filter((e) => isFeastTitle(e.title || e.name))
+        .map((e, idx) => (
+          <span
+            key={e.id ?? e._id ?? idx}
+            className="inline-block text-[10px] px-1 py-0.5 rounded bg-emerald-600 text-white"
+          >
+            {e.title || e.name}
+          </span>
+        ));
       const base =
         "calendar-cell border p-2 min-h-[90px] flex flex-col bg-white";
       const sabbathCls = hasSabbathEvent
@@ -279,6 +315,12 @@ export default function CalendarView() {
           {enochDay ? (
             <div className="text-xs mt-1 font-semibold">Day {enochDay}</div>
           ) : null}
+
+          {/* badges row */}
+          <div className="flex flex-wrap gap-1 mt-1">
+            {sabbathBadge}
+            {feastBadges}
+          </div>
 
           {/* Non-Day events */}
           {displayEvents.map((event, idx) => {
@@ -349,6 +391,14 @@ export default function CalendarView() {
             .slice(0, 5)
             .join(", ") || "none"}
         </div>
+      </div>
+      {/* Weekday headers */}
+      <div className="grid grid-cols-7 text-center text-xs font-semibold text-gray-600">
+        {WEEKDAYS.map((d) => (
+          <div key={d} className="py-1">
+            {d}
+          </div>
+        ))}
       </div>
 
       {/* Grid */}
