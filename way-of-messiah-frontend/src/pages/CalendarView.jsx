@@ -7,32 +7,38 @@ import ExplanationPanel from "../components/ExplanationPanel.jsx";
 
 dayjs.extend(utc);
 
-// ---------- Helpers
+/* ----------------- Helpers ----------------- */
+
+// Accept title from either `title` or `name`
 const getTitle = (e) => (e?.title ?? e?.name ?? "");
-// Returns YYYY-MM-DD for any of the known date fields
+
+// Parse "Day N" from titles like "Day 1", "day 12", etc.
+const parseDayNumber = (t) => {
+  const m = String(t || "").match(/^\s*day\s*(\d{1,3})\s*$/i);
+  return m ? parseInt(m[1], 10) : null;
+};
+
+// Convert any supported date-ish field to YYYY-MM-DD
 const toYmd = (v) => {
   if (!v) return null;
-  if (typeof v === "string") return v.slice(0, 10); // "2025-03-21T00:00:00.000Z" → "2025-03-21"
-  // if somehow a Date object slipped through
+  if (typeof v === "string") return v.slice(0, 10);
   try { return dayjs.utc(v).format("YYYY-MM-DD"); } catch { return null; }
 };
+
+// Normalize events so we can rely on `id`, `title`, and `dateYmd`
 const normalizeEvent = (e) => {
   const id = (e?.id ?? e?._id ?? "").toString();
-  const title = e?.title ?? e?.name ?? ""; // tolerate 'name'
+  const title = e?.title ?? e?.name ?? "";
   const dateYmd =
     e?.dateYmd ??
     toYmd(e?.dateISO) ??
     toYmd(e?.date) ??
     toYmd(e?.startDate) ??
     null;
-
-  return {
-    ...e,
-    id,
-    title,
-    dateYmd,
-  };
+  return { ...e, id, title, dateYmd };
 };
+
+// Get the day key we use for lookup
 const keyFromEvent = (e) =>
   e?.dateYmd ??
   toYmd(e?.dateISO) ??
@@ -40,6 +46,7 @@ const keyFromEvent = (e) =>
   toYmd(e?.startDate) ??
   null;
 
+// Build a map: YYYY-MM-DD -> [events]
 const groupByDay = (items) => {
   const arr = Array.isArray(items) ? items : [];
   return arr.reduce((acc, ev) => {
@@ -49,34 +56,14 @@ const groupByDay = (items) => {
     return acc;
   }, {});
 };
-/* // Color cell detectors helpers
-const isSabbathTitle = (t) =>
-  String(t || "")
-    .toLowerCase()
-    .includes("sabbath");
-const isFeastTitle = (t) => {
-  const s = String(t || "").toLowerCase();
-  return [
-    "passover",
-    "unleavened",
-    "first fruits",
-    "weeks",
-    "pentecost",
-    "trumpets",
-    "atonement",
-    "tabernacles",
-    "booths",
-    "last great day",
-  ].some((k) => s.includes(k));
-}; */
 
 export default function CalendarView() {
-  // ---- URL query params (optional: year & month)
+  // ---- Optional ?year=YYYY&month=M in URL
   const params = new URLSearchParams(window.location.search);
   const qsYear = params.get("year");
-  const qsMonth = params.get("month"); // 1..12 expected
+  const qsMonth = params.get("month"); // 1..12
 
-  // ---- Initial month in UTC
+  // ---- Initial month (UTC)
   const initialMonth =
     qsYear && qsMonth
       ? dayjs.utc(`${qsYear}-${String(qsMonth).padStart(2, "0")}-01`)
@@ -85,9 +72,11 @@ export default function CalendarView() {
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [events, setEvents] = useState([]);
   const [springEquinox, setSpringEquinox] = useState(null); // 'YYYY-MM-DD' or null
+  const [yearAnchor, setYearAnchor] = useState(null); // dayjs or null
 
   const byDay = useMemo(() => groupByDay(events), [events]);
 
+  /* -------- Month events + (optional) equinox fetch -------- */
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -103,6 +92,7 @@ export default function CalendarView() {
         if (!cancel) setEvents([]);
       }
 
+      // Equinox is optional; treat 404 as no data
       try {
         const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
         const res = await axios.get(
@@ -124,14 +114,55 @@ export default function CalendarView() {
     };
   }, [selectedMonth]);
 
-  // ---- Determine a single Day 1 anchor from available data
+  /* -------- Year anchor fetch (Mar 1 → Apr 10) --------
+     We load a tiny spring window once per year so Day labels work in every month. */
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      try {
+        const year = selectedMonth.year();
+        const from = dayjs.utc(`${year}-03-01`).format("YYYY-MM-DD");
+        const to   = dayjs.utc(`${year}-04-10`).format("YYYY-MM-DD");
+
+        const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+        const r = await fetch(`${BASE}/api/events?from=${from}&to=${to}`);
+        if (!r.ok) throw new Error(`anchor HTTP ${r.status}`);
+        const raw = await r.json();
+        const list = Array.isArray(raw) ? raw.map(normalizeEvent) : [];
+
+        // Prefer explicit Day 1
+        const d1 = list.find(e => e.dateYmd && parseDayNumber(e.title) === 1);
+        if (!cancel && d1) { setYearAnchor(dayjs.utc(d1.dateYmd)); return; }
+
+        // Else derive from any Day N (earliest by date)
+        const any = list
+          .filter(e => e.dateYmd && parseDayNumber(e.title))
+          .sort((a,b) => a.dateYmd.localeCompare(b.dateYmd))[0];
+        if (!cancel && any) {
+          const n = parseDayNumber(any.title);
+          setYearAnchor(dayjs.utc(any.dateYmd).subtract(n - 1, "day"));
+          return;
+        }
+
+        // Fallback: equinox + 1 day (if available)
+        if (!cancel) setYearAnchor(springEquinox ? dayjs.utc(springEquinox).add(1,"day") : null);
+      } catch {
+        if (!cancel) setYearAnchor(springEquinox ? dayjs.utc(springEquinox).add(1,"day") : null);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [selectedMonth.year(), springEquinox]);
+
+  /* -------- Month-scope anchor (from current month events) -------- */
   const enochAnchor = useMemo(() => {
     const list = Array.isArray(events) ? events : [];
+
     // Prefer explicit Day 1
     const d1 = list.find(
       (e) => parseDayNumber(getTitle(e)) === 1 && keyFromEvent(e)
     );
     if (d1) return dayjs.utc(keyFromEvent(d1));
+
     // Else derive from any Day N (earliest by date)
     const anyDay = list
       .map((e) => {
@@ -141,11 +172,14 @@ export default function CalendarView() {
       })
       .filter(Boolean)
       .sort((a, b) => a.ymd.localeCompare(b.ymd))[0];
+
     if (anyDay) return dayjs.utc(anyDay.ymd).subtract(anyDay.num - 1, "day");
-    // Last resort: equinox + 1
+
+    // Last resort: equinox + 1 (string)
     return springEquinox ? dayjs.utc(springEquinox).add(1, "day") : null;
   }, [events, springEquinox]);
 
+  /* -------- Lookups & labeling -------- */
   const getEventsByDate = (dateUtc) => {
     const key = dateUtc?.format("YYYY-MM-DD");
     if (!key) return [];
@@ -153,32 +187,37 @@ export default function CalendarView() {
     return Array.isArray(bucket) ? bucket : [];
   };
 
+  // Use the best anchor available: month → year → equinox+1
   const calculateEnochDay = (dateUtc) => {
-    if (!enochAnchor || dateUtc.isBefore(enochAnchor)) return null;
-    const n = dateUtc.diff(enochAnchor, "day") + 1;
+    const anchor =
+      enochAnchor ||
+      yearAnchor ||
+      (springEquinox ? dayjs.utc(springEquinox).add(1, "day") : null);
+    if (!anchor || dateUtc.isBefore(anchor)) return null;
+    const n = dateUtc.diff(anchor, "day") + 1;
     return n >= 1 && n <= 364 ? n : null;
   };
 
-  // ---- Navigation
+  /* -------- Navigation -------- */
   const goPrevMonth = () => setSelectedMonth((m) => m.subtract(1, "month"));
   const goNextMonth = () => setSelectedMonth((m) => m.add(1, "month"));
   const goToday = () => setSelectedMonth(dayjs.utc().startOf("month"));
 
-  // ---- Render month grid (42 cells)
+  /* -------- Grid render (42 cells) -------- */
   const renderCells = () => {
     const cells = [];
     const startOfMonthUtc = selectedMonth.utc().startOf("month");
-    const firstGridDayUtc = startOfMonthUtc.startOf("week"); // Sunday-start
+    const firstGridDayUtc = startOfMonthUtc.startOf("week"); // Sunday-start in UTC
 
     for (let i = 0; i < 42; i++) {
       const currentDateUTC = firstGridDayUtc.add(i, "day");
-      const currentDateLabel = currentDateUTC; // keep UTC label, or .local() if you prefer
+      const currentDateLabel = currentDateUTC; // use .local() if you prefer local labels
       const isCurrentMonth = currentDateUTC.month() === selectedMonth.month();
 
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDateUTC) : [];
       const enochDay = calculateEnochDay(currentDateUTC);
 
-      // ---- Coloring rules
+      // Coloring by event titles (you can refine these)
       const hasSabbathEvent = todayEvents.some((e) =>
         /sabbath/i.test(getTitle(e))
       );
@@ -199,20 +238,27 @@ export default function CalendarView() {
       const outsideCls = !isCurrentMonth ? " opacity-40" : "";
       const cellClass = `${base}${sabbathCls}${feastCls}${outsideCls}`;
 
-      // Hide raw "Day N" events (we display computed label instead)
-      const displayEvents = todayEvents.filter(
+      // Only hide raw “Day N” titles if we actually show the computed label
+      const displayEvents = enochDay
+        ? todayEvents.filter(
         (e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e))
-      );
+          )
+        : todayEvents;
 
       const key = currentDateUTC.format("YYYY-MM-DD");
       cells.push(
         <div key={key} className={cellClass}>
+          {/* Date label */}
           <div className="text-xs font-semibold">
             {currentDateLabel.format("MMM D")}
           </div>
+
+          {/* Computed Enoch Day label */}
           {enochDay ? (
             <div className="text-xs mt-1 font-semibold">Day {enochDay}</div>
           ) : null}
+
+          {/* Non-Day events */}
           {displayEvents.map((event, idx) => {
             const label =
               Array.isArray(event.description) && event.description.length
@@ -232,6 +278,15 @@ export default function CalendarView() {
 
   return (
     <div className="p-4 space-y-4">
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-xl font-bold">CONSECRATED DAYS OF YAHUAH</h1>
+        <div className="text-sm text-gray-700">
+          {selectedMonth.format("MMMM YYYY")} – Enoch 364 Day Calendar
+        </div>
+      </div>
+
+      {/* Controls */}
       <div className="flex items-center gap-2">
         <button
           onClick={goPrevMonth}
@@ -256,9 +311,10 @@ export default function CalendarView() {
         </div>
       </div>
 
+      {/* Grid */}
       <div className="grid grid-cols-7 gap-px bg-gray-300">{renderCells()}</div>
 
-      {/* Explanation panel hides itself on 404/empty (see its guarded version) */}
+      {/* Explanation panel (it hides itself on 404/empty by design) */}
       <ExplanationPanel
         year={selectedMonth.year()}
         month={selectedMonth.month() + 1}
