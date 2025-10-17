@@ -7,16 +7,19 @@ import "../assets/css/CalendarView.css";
 import { fetchEventsForMonth } from "../lib/calendarApi.js";
 
 dayjs.extend(utc);
-// --- A) HELPERS: add these at module scope (top of file, after imports) ---
-const keyFromEvent = (e) => e.dateYmd ?? e.dateISO?.slice(0, 10) ?? null;
+// helpers (top of file or above component)
+const keyFromEvent = (e) =>
+  (e && e.dateYmd) || (e && e.dateISO ? e.dateISO.slice(0, 10) : null);
 
-const groupByDay = (items) =>
-  items.reduce((acc, e) => {
+const groupByDay = (items) => {
+  const arr = Array.isArray(items) ? items : [];
+  return arr.reduce((acc, e) => {
     const k = keyFromEvent(e);
     if (!k) return acc;
     (acc[k] ||= []).push(e);
     return acc;
   }, {});
+};
 
 const CalendarView = () => {
   const [springEquinox, setSpringEquinox] = useState(null);
@@ -31,25 +34,38 @@ const CalendarView = () => {
 
   const initialMonth =
     qsYear && qsMonth
-      ? dayjs(`${qsYear}-${String(qsMonth).padStart(2, "0")}-01`)
-      : dayjs().startOf("month");
+      ? dayjs.utc(`${qsYear}-${String(qsMonth).padStart(2, "0")}-01`)
+      : dayjs.utc().startOf("month");
 
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
+
   const [panelReady, setPanelReady] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   // Toggle this flag to enable/disable the Download button globally
   const DOWNLOAD_ENABLED = false;
-  const BASE_URL = import.meta.env.VITE_API_URL;
+  const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
 
   useEffect(() => {
     const fetchEquinox = async () => {
       try {
         const year = selectedMonth.year();
-        const res = await axios.get(`${BASE_URL}/api/equinox?year=${year}`);
-        setSpringEquinox(dayjs.utc(res.data.springEquinox));
+        const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+        const url = `${BASE}/api/equinox?year=${year}`;
+        const res = await axios.get(url);
+
+        // Accept either shape from backend:
+        // { equinoxYmd: "YYYY-MM-DD" }  or  { springEquinox: "YYYY-MM-DD" }
+        const ymd = res?.data?.equinoxYmd ?? res?.data?.springEquinox ?? null;
+        setSpringEquinox(ymd ? dayjs.utc(ymd) : null);
       } catch (err) {
+        // Treat 404 as "no equinox endpoint yet" — don’t error out, just continue with null
+        if (err?.response?.status === 404) {
+          setSpringEquinox(null);
+          return;
+        }
         console.error("Error fetching spring equinox:", err);
         setSpringEquinox(null);
       }
@@ -61,7 +77,7 @@ const CalendarView = () => {
           selectedMonth.year(),
           selectedMonth.month()
         );
-        setEvents(data || []);
+        setEvents(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching events:", err);
         setEvents([]);
@@ -70,7 +86,7 @@ const CalendarView = () => {
 
     fetchEquinox();
     fetchMonth();
-  }, [BASE_URL, selectedMonth]);
+  }, [BASE, selectedMonth]);
 
   // ---------- Helpers ----------
   // Treat feast detection broadly (supports synonyms & Hebrew names)
@@ -92,11 +108,10 @@ const CalendarView = () => {
 
   // Compare using UTC to avoid TZ pushing items to the previous/next day
   const getEventsByDate = (dateLocal) => {
-    const key = dateLocal.format("YYYY-MM-DD"); // grid day
-    return events.filter((e) => {
-      const ymd = e.dateYmd ?? e.dateISO?.slice(0, 10);
-      return ymd === key;
-    });
+    const key = dateLocal?.format("YYYY-MM-DD");
+    if (!key) return [];
+    const bucket = byDay[key];
+    return Array.isArray(bucket) ? bucket : [];
   };
 
   const isFeastEvent = (e) => {
@@ -208,7 +223,7 @@ const CalendarView = () => {
       const y = selectedMonth.year();
       const m = selectedMonth.month() + 1;
       const response = await fetch(
-        `${BASE_URL}/calendar/download?year=${y}&startMonth=${m}&months=12`
+        `${BASE}/calendar/download?year=${y}&startMonth=${m}&months=12`
       );
       if (!response.ok) throw new Error("Failed to download calendar");
       const blob = await response.blob();

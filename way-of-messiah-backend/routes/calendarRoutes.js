@@ -12,6 +12,61 @@ const {
 // ⬇️ Add your Mongoose model
 const Event = require("../models/Event");
 const generateCalendarZIP = require("../utils/generateCalendarZIP");
+// GET /api/equinox?year=2025
+// Returns the Spring Equinox as YYYY-MM-DD (derived as the day before Day 1).
+router.get("/equinox", async (req, res) => {
+  try {
+    const year = parseInt(req.query.year, 10);
+    if (!year) return res.status(400).json({ error: "year is required" });
+
+    // window around Mar 21 in UTC
+    const from = new Date(Date.UTC(year, 2, 1));  // Mar 1
+    const to   = new Date(Date.UTC(year, 3, 10)); // Apr 10
+
+    // Prefer an explicit Day 1 title; else fall back to earliest all-day date in window
+    const day1 = await Event.findOne({
+      isPublished: true,
+      title: "Day 1",
+      date: { $gte: from, $lt: to }
+    }).sort({ date: 1 }).lean();
+
+    let day1Date = day1?.date;
+    if (!day1Date) {
+      const first = await Event.findOne({
+        isPublished: true,
+        date: { $gte: from, $lt: to }
+      }).sort({ date: 1 }).lean();
+      if (first?.date) day1Date = first.date;
+    }
+
+    if (!day1Date) return res.status(404).json({ error: "Day 1 not found for year" });
+
+    const equinox = new Date(new Date(day1Date).getTime() - 24 * 60 * 60 * 1000);
+    const ymd = equinox.toISOString().slice(0, 10);
+    return res.json({ year, equinoxYmd: ymd });
+  } catch (err) {
+    console.error("GET /equinox failed:", err);
+    return res.status(500).json({ error: "Failed to compute equinox" });
+  }
+});
+// GET /api/explanations?year=2025&month=10
+router.get("/explanations", async (req, res) => {
+  try {
+    const year = parseInt(req.query.year, 10);
+    const month = parseInt(req.query.month, 10); // 1-12 expected from client
+    if (!year || !month) return res.status(400).json({ error: "year and month are required" });
+
+    // Basic stub — return empty list with echo of the request.
+    return res.json({
+      year,
+      month,
+      items: [] // put your computed Sabbath/Feast notes here later
+    });
+  } catch (err) {
+    console.error("GET /explanations failed:", err);
+    return res.status(500).json({ error: "Failed to load explanations" });
+  }
+});
 
 router.get("/download", async (req, res) => {
   try {
