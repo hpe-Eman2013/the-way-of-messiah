@@ -77,6 +77,40 @@ const isFeastTitle = (t) =>
   );
 // Sabbath Helper
 const isSabbathTitle = (t) => /sabbath/i.test(String(t || ""));
+// Build a lowercase “haystack” of all relevant text for an event
+const eventText = (e) => {
+  const pieces = [];
+  if (Array.isArray(e?.description)) pieces.push(e.description.join(" "));
+  else if (e?.description) pieces.push(String(e.description));
+
+  pieces.push(e?.title, e?.name, e?.category);
+  return pieces.filter(Boolean).join(" ").toLowerCase();
+};
+
+// True if event mentions Sabbath (prefer description, but tolerant)
+const isSabbath = (e) => eventText(e).includes("sabbath");
+
+// True if event mentions any feast keywords
+const isFeast = (e) =>
+  /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(
+    eventText(e)
+  );
+
+// Extract specific feast labels for badges (from description/title/etc.)
+const extractFeastLabels = (e) => {
+  const labels = new Set();
+  const hay = eventText(e);
+  if (/passover/i.test(hay)) labels.add("Passover");
+  if (/unleavened/i.test(hay)) labels.add("Unleavened Bread");
+  if (/first\s*fruits/i.test(hay)) labels.add("First Fruits");
+  if (/\bweeks\b|pentecost/i.test(hay)) labels.add("Weeks / Pentecost");
+  if (/trumpets/i.test(hay)) labels.add("Trumpets");
+  if (/atonement/i.test(hay)) labels.add("Atonement");
+  if (/tabernacles|booths/i.test(hay)) labels.add("Tabernacles");
+  if (/last\s*great\s*day/i.test(hay)) labels.add("Last Great Day");
+  return [...labels];
+};
+
 export default function CalendarView() {
   // ---- Optional ?year=YYYY&month=M in URL
   const params = new URLSearchParams(window.location.search);
@@ -222,6 +256,22 @@ export default function CalendarView() {
 
     return springEquinox ? dayjs.utc(springEquinox).add(1, "day") : null;
   }, [events, springEquinox]);
+  // Explanation Panel
+  // Build explanation lines for the visible month from events
+  const explanationItems = useMemo(() => {
+    const items = [];
+    const monthPrefix = selectedMonth.format("YYYY-MM");
+    Object.entries(byDay).forEach(([ymd, list]) => {
+      if (!ymd.startsWith(monthPrefix)) return;
+      const mmmd = dayjs.utc(ymd).format("MMM D");
+      const labels = [];
+      if (list.some(isSabbath)) labels.push("Sabbath");
+      const feastSet = new Set(list.flatMap(extractFeastLabels));
+      feastSet.forEach((l) => labels.push(l));
+      if (labels.length) items.push(`${mmmd}: ${labels.join(", ")}`);
+    });
+    return items;
+  }, [byDay, selectedMonth]);
 
   /* -------- Lookups & labeling -------- */
   const getEventsByDate = (dateUtc) => {
@@ -262,38 +312,36 @@ export default function CalendarView() {
       const enochDay = calculateEnochDay(currentDateUTC);
 
       // Coloring by event titles (you can refine these)
-      const hasSabbathEvent = todayEvents.some((e) =>
-        /sabbath/i.test(getTitle(e))
-      );
-      const hasFeastEvent = todayEvents.some((e) =>
-        /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(
-          getTitle(e)
-        )
-      );
-      // badges shown under the date & Day N label
+      // Option A — trust DB: look in description/title/name/category
+      const hasSabbathEvent = todayEvents.some(isSabbath);
+      const hasFeastEvent = todayEvents.some(isFeast);
+
+      // Badges
       const sabbathBadge = hasSabbathEvent ? (
         <span className="inline-block text-[10px] px-1 py-0.5 rounded bg-purple-600 text-white">
           Sabbath
         </span>
       ) : null;
 
-      const feastBadges = todayEvents
-        .filter((e) => isFeastTitle(e.title || e.name))
-        .map((e, idx) => (
+      const feastBadges = todayEvents.flatMap((e, idx) =>
+        extractFeastLabels(e).map((label, i) => (
           <span
-            key={e.id ?? e._id ?? idx}
+            key={`${e.id ?? e._id ?? idx}-${label}-${i}`}
             className="inline-block text-[10px] px-1 py-0.5 rounded bg-emerald-600 text-white"
           >
-            {e.title || e.name}
+            {label}
           </span>
-        ));
+        ))
+      );
+
+      // More visible tint (ring offset so it shows in the gray gaps)
       const base =
         "calendar-cell border p-2 min-h-[90px] flex flex-col bg-white";
       const sabbathCls = hasSabbathEvent
-        ? " ring-2 ring-purple-500 bg-purple-50"
+        ? " ring-2 ring-purple-500 ring-offset-1 ring-offset-gray-300 bg-purple-50"
         : "";
       const feastCls = hasFeastEvent
-        ? " ring-2 ring-emerald-600 bg-emerald-50"
+        ? " ring-2 ring-emerald-600 ring-offset-1 ring-offset-gray-300 bg-emerald-50"
         : "";
       const outsideCls = !isCurrentMonth ? " opacity-40" : "";
       const cellClass = `${base}${sabbathCls}${feastCls}${outsideCls}`;
@@ -408,6 +456,7 @@ export default function CalendarView() {
       <ExplanationPanel
         year={selectedMonth.year()}
         month={selectedMonth.month() + 1}
+        items={explanationItems}
       />
     </div>
   );
