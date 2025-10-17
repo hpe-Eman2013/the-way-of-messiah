@@ -1,344 +1,259 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import ExplanationPanel from "../components/ExplanationPanel.jsx";
-import "../assets/css/CalendarView.css";
+import axios from "axios";
 import { fetchEventsForMonth } from "../lib/calendarApi.js";
+import ExplanationPanel from "../components/ExplanationPanel.jsx";
 
 dayjs.extend(utc);
-// helpers (top of file or above component)
-const keyFromEvent = (e) =>
-  (e && e.dateYmd) || (e && e.dateISO ? e.dateISO.slice(0, 10) : null);
 
-const groupByDay = (items) => {
-  const arr = Array.isArray(items) ? items : [];
-  return arr.reduce((acc, e) => {
-    const k = keyFromEvent(e);
-    if (!k) return acc;
-    (acc[k] ||= []).push(e);
-    return acc;
-  }, {});
-};
-// Extract "N" from titles like "Day 1", "Day 12", case/space tolerant
+// ------ Helpers (module scope)
+const keyFromEvent = (e) => e?.dateYmd ?? e?.dateISO?.slice(0, 10) ?? null; // YYYY-MM-DD
 const parseDayNumber = (title) => {
-  const m = String(title || "").match(/^day\s*(\d{1,3})$/i);
+  const m = String(title || "").match(/^\s*day\s*(\d{1,3})\s*$/i);
   return m ? parseInt(m[1], 10) : null;
 };
 
+const groupByDay = (items) => {
+  const arr = Array.isArray(items) ? items : [];
+  return arr.reduce((acc, ev) => {
+    const k = keyFromEvent(ev);
+    if (!k) return acc;
+    (acc[k] ||= []).push(ev);
+    return acc;
+  }, {});
+};
+// Color cell detectors helpers
+const isSabbathTitle = (t) =>
+  String(t || "")
+    .toLowerCase()
+    .includes("sabbath");
+const isFeastTitle = (t) => {
+  const s = String(t || "").toLowerCase();
+  return [
+    "passover",
+    "unleavened",
+    "first fruits",
+    "weeks",
+    "pentecost",
+    "trumpets",
+    "atonement",
+    "tabernacles",
+    "booths",
+    "last great day",
+  ].some((k) => s.includes(k));
+};
 
-const CalendarView = () => {
-  const [springEquinox, setSpringEquinox] = useState(null);
-  const [events, setEvents] = useState([]);
-  // --- Add this memo AFTER events is declared ---
-  const byDay = useMemo(() => groupByDay(events), [events]);
-  // --- Print mode & query params ---
+export default function CalendarView() {
+  // ---- URL query params (optional: year & month)
   const params = new URLSearchParams(window.location.search);
-  const printMode = params.get("print") === "1";
-  const qsYear = Number(params.get("year"));
-  const qsMonth = Number(params.get("month"));
+  const qsYear = params.get("year");
+  const qsMonth = params.get("month"); // 1..12 expected
 
+  // ---- Initial month in UTC
   const initialMonth =
     qsYear && qsMonth
       ? dayjs.utc(`${qsYear}-${String(qsMonth).padStart(2, "0")}-01`)
       : dayjs.utc().startOf("month");
 
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
+  const [events, setEvents] = useState([]);
+  const [springEquinox, setSpringEquinox] = useState(null); // string or dayjs? we'll store string
 
-  const [panelReady, setPanelReady] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  // Toggle this flag to enable/disable the Download button globally
-  const DOWNLOAD_ENABLED = false;
-  const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+  // ---- Build a quick lookup by day
+  const byDay = useMemo(() => groupByDay(events), [events]);
 
-
+  // ---- Fetch month events + equinox (404 safe)
   useEffect(() => {
-    const fetchEquinox = async () => {
-      try {
-        const year = selectedMonth.year();
-        const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-        const url = `${BASE}/api/equinox?year=${year}`;
-        const res = await axios.get(url);
+    let cancel = false;
 
-        // Accept either shape from backend:
-        // { equinoxYmd: "YYYY-MM-DD" }  or  { springEquinox: "YYYY-MM-DD" }
-        const ymd = res?.data?.equinoxYmd ?? res?.data?.springEquinox ?? null;
-        setSpringEquinox(ymd ? dayjs.utc(ymd) : null);
-      } catch (err) {
-        // Treat 404 as "no equinox endpoint yet" — don’t error out, just continue with null
-        if (err?.response?.status === 404) {
-          setSpringEquinox(null);
-          return;
-        }
-        console.error("Error fetching spring equinox:", err);
-        setSpringEquinox(null);
-      }
-    };
-
-    const fetchMonth = async () => {
+    const load = async () => {
       try {
+        // Events for this month (UTC boundaries handled in helper)
         const data = await fetchEventsForMonth(
           selectedMonth.year(),
           selectedMonth.month()
         );
-        setEvents(Array.isArray(data) ? data : []);
+        if (!cancel) setEvents(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error("Error fetching events:", e);
+        if (!cancel) setEvents([]);
+      }
+
+      // Equinox is optional; treat 404 as no-data (don't error)
+      try {
+        const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+        const url = `${BASE}/api/equinox?year=${selectedMonth.year()}`;
+        const res = await axios.get(url);
+        const ymd = res?.data?.equinoxYmd ?? res?.data?.springEquinox ?? null;
+        if (!cancel) setSpringEquinox(ymd);
       } catch (err) {
-        console.error("Error fetching events:", err);
-        setEvents([]);
+        if (err?.response?.status === 404) {
+          if (!cancel) setSpringEquinox(null);
+        } else {
+          console.warn("Equinox load (ignored):", err?.message || err);
+          if (!cancel) setSpringEquinox(null);
+        }
       }
     };
 
-    fetchEquinox();
-    fetchMonth();
-  }, [BASE, selectedMonth]);
+    load();
+    return () => {
+      cancel = true;
+    };
+  }, [selectedMonth]);
 
-  // ---------- Helpers ----------
-  // Treat feast detection broadly (supports synonyms & Hebrew names)
-  const isFeast = (text) =>
-    /(feast|passover|atonement|tabernacles|shavuot|unleavened|trumpets|firstfruits|teruah|kippur|sukkot|weeks)/i.test(
-      text
-    );
+  // ---- Determine a single Day 1 anchor from available data
+  const getEnochAnchor = () => {
+    const list = Array.isArray(events) ? events : [];
 
-  // Normalize labels like "Feast of Tabernacles (Sukkot) Start" -> "feast of tabernacles"
-  const normalizeFeastTag = (s) =>
-    s
-      ?.toString()
-      .toLowerCase()
-      .replace(/\(.*?\)/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/\s+(start|end)\s*$/i, "")
-      .trim();
+    // Prefer explicit "Day 1"
+    const d1 = list.find((e) => parseDayNumber(e.title) === 1);
+    if (d1) return dayjs.utc(keyFromEvent(d1));
 
-  // Compare using UTC to avoid TZ pushing items to the previous/next day
-  const getEventsByDate = (dateLocal) => {
-    const key = dateLocal?.format("YYYY-MM-DD");
+    // Else derive from any Day N (use the earliest by date for stability)
+    const anyDay = list
+      .map((e) => {
+        const num = parseDayNumber(e.title);
+        const ymd = keyFromEvent(e);
+        return num && ymd ? { num, ymd } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.ymd.localeCompare(b.ymd))[0];
+
+    if (anyDay) {
+      return dayjs.utc(anyDay.ymd).subtract(anyDay.num - 1, "day");
+    }
+
+    // Last resort: equinox + 1 day (if API provided it)
+    if (springEquinox) return dayjs.utc(springEquinox).add(1, "day");
+
+    return null;
+  };
+
+  const enochAnchor = useMemo(() => getEnochAnchor(), [events, springEquinox]);
+
+  // ---- Helpers used inside render
+  const getEventsByDate = (dateUtc) => {
+    const key = dateUtc?.format("YYYY-MM-DD");
     if (!key) return [];
     const bucket = byDay[key];
     return Array.isArray(bucket) ? bucket : [];
   };
 
-  const isFeastEvent = (e) => {
-    const check = (val) =>
-      typeof val === "string" && isFeast(val.toLowerCase());
-    if (Array.isArray(e.description)) return e.description.some(check);
-    return check(e.title) || check(e.description);
+  const calculateEnochDay = (dateUtc) => {
+    if (!enochAnchor || dateUtc.isBefore(enochAnchor)) return null;
+    const n = dateUtc.diff(enochAnchor, "day") + 1;
+    return n >= 1 && n <= 364 ? n : null;
   };
 
-  const isSabbathEvent = (e) => {
-    const check = (val) =>
-      typeof val === "string" && val.toLowerCase().includes("sabbath");
-    if (Array.isArray(e.description)) return e.description.some(check);
-    return check(e.title) || check(e.description);
-  };
+  // ---- Navigation handlers
+  const goPrevMonth = () => setSelectedMonth((m) => m.subtract(1, "month"));
+  const goNextMonth = () => setSelectedMonth((m) => m.add(1, "month"));
+  const goToday = () => setSelectedMonth(dayjs.utc().startOf("month"));
 
-  const renderCells = (month) => {
+  // ---- Render month grid (42 cells)
+  const renderCells = () => {
     const cells = [];
-    const startDay = month.startOf("month").day(); // 0=Sun
-    const daysInMonth = month.daysInMonth();
-    const totalCells = startDay + daysInMonth > 35 ? 42 : 35;
 
-    for (let i = 0; i < totalCells; i++) {
-      const currentDateLocal = month.startOf("month").add(i - startDay, "day");
-      const isCurrentMonth = currentDateLocal.month() === month.month();
+    const startOfMonthUtc = selectedMonth.utc().startOf("month");
+    const firstGridDayUtc = startOfMonthUtc.startOf("week"); // Sunday-start grid in UTC
 
-      // Use UTC for logic; local only for labels
-      const currentDateUTC = dayjs.utc(currentDateLocal.format("YYYY-MM-DD"));
+    for (let i = 0; i < 42; i++) {
+      const currentDateUTC = firstGridDayUtc.add(i, "day");
+      const currentDateLocal = currentDateUTC; // keep UTC label; or use .local() if you prefer local display
+
+      const isCurrentMonth = currentDateUTC.month() === selectedMonth.month();
+
       const todayEvents = isCurrentMonth ? getEventsByDate(currentDateUTC) : [];
-
-      const calculateEnochDay = (dateUTC) => {
-  // collect all "Day N" events we have for this month
-  const dayEvents = (Array.isArray(events) ? events : [])
-    .map(e => {
-      const num = parseDayNumber(e.title);
-      const ymd = keyFromEvent(e);
-      return num && ymd ? { num, ymd } : null;
-    })
-    .filter(Boolean);
-
-  // If we have any Day N in view, derive the anchor robustly
-  if (dayEvents.length) {
-    // Prefer an explicit Day 1 if present
-    const day1 = dayEvents.find(d => d.num === 1);
-    if (day1) {
-      const anchor = dayjs.utc(day1.ymd); // Day 1 date
-      if (dateUTC.isBefore(anchor)) return null;
-      const n = dateUTC.diff(anchor, "day") + 1;
-      return n >= 1 && n <= 364 ? n : null;
-    }
-    // Otherwise derive Day 1 from any Day N we do have
-    // (pick the earliest date so month boundaries behave nicely)
-    const byDateAsc = [...dayEvents].sort((a, b) => a.ymd.localeCompare(b.ymd));
-    const ref = byDateAsc[0];
-    const anchor = dayjs.utc(ref.ymd).subtract(ref.num - 1, "day"); // back-calc Day 1
-    if (dateUTC.isBefore(anchor)) return null;
-    const n = dateUTC.diff(anchor, "day") + 1;
-    return n >= 1 && n <= 364 ? n : null;
-  }
-
-  // Fallback if no Day N events are available: use equinox if present
-  if (springEquinox) {
-    const anchor = dayjs.utc(springEquinox).add(1, "day"); // Day 1 = equinox + 1
-    if (dateUTC.isBefore(anchor)) return null;
-    const n = dateUTC.diff(anchor, "day") + 1;
-    return n >= 1 && n <= 364 ? n : null;
-  }
-
-  // No basis → no label
-  return null;
-};
-
-
-
       const enochDay = calculateEnochDay(currentDateUTC);
 
-      const classNames = [];
-      if (todayEvents.some((e) => isSabbathEvent(e)))
-        classNames.push("sabbath");
-      if (todayEvents.some((e) => isFeastEvent(e))) classNames.push("feast");
+      // Hide raw "Day N" events (we display the computed label instead)
+      const displayEvents = todayEvents.filter(
+        (e) => !/^day\s*\d{1,3}$/i.test(e?.title || "")
+      );
+      // flags
+      const outsideMonth = !isCurrentMonth;
+      const hasSabbathEvent = todayEvents.some((e) => isSabbathTitle(e.title));
+      const hasFeastEvent = todayEvents.some((e) => isFeastTitle(e.title));
+      // OR: if you prefer Enoch-week Sabbaths: const hasSabbathEvent = [7,14,21,28].includes(enochDay);
+
+      // classes
+      const base =
+        "calendar-cell border p-2 min-h-[90px] flex flex-col bg-white";
+      const sabbathCls = hasSabbathEvent
+        ? " ring-2 ring-purple-500 bg-purple-50"
+        : "";
+      const feastCls = hasFeastEvent
+        ? " ring-2 ring-emerald-500 bg-emerald-50"
+        : "";
+      const outCls = outsideMonth ? " opacity-40" : "";
+      const cellClass = base + sabbathCls + feastCls + outCls;
+
+      const key = currentDateUTC.format("YYYY-MM-DD");
 
       cells.push(
-        <div key={i} className={`day ${classNames.join(" ")}`}>
-          {isCurrentMonth && (
-            <>
-              {/* Local for visual label */}
-              <div className="font-bold text-sm">
-                {currentDateLocal.format("MMM D")}
+        <div key={key} className={cellClass}>
+          <div className="text-xs font-semibold">
+            {currentDateLocal.format("MMM D")}
+          </div>
+          {enochDay ? (
+            <div className="text-xs mt-1 font-semibold">Day {enochDay}</div>
+          ) : null}
+
+          {displayEvents.map((event, idx) => {
+            const label =
+              Array.isArray(event.description) && event.description.length
+                ? event.description.join(", ")
+                : event.title || "";
+            return (
+              <div key={event.id ?? event._id ?? idx} className="text-xs mt-1">
+                <strong>{label}</strong>
               </div>
-              {enochDay && (
-                <div className="text-xs font-bold">Day {enochDay}</div>
-              )}
-              {todayEvents.map((event) => {
-                const isDayLabel = /^Day\s\d{1,3}$/i.test(event.title);
-                return !isDayLabel ? (
-                  <div key={event.id ?? event._id} className="text-xs mt-1">
-                    <strong>
-                      {Array.isArray(event.description) &&
-                      event.description.length > 0
-                        ? event.description.join(", ")
-                        : event.title}
-                    </strong>
-                  </div>
-                ) : null;
-              })}
-            </>
-          )}
+            );
+          })}
         </div>
       );
     }
+
     return cells;
   };
 
-  // Paging controls
-  const goToPreviousMonth = () =>
-    setSelectedMonth((prev) => prev.subtract(1, "month"));
-  const goToNextMonth = () => setSelectedMonth((prev) => prev.add(1, "month"));
-
-  // Download ZIP (start from current view)
-  const handleDownloadCalendar = async () => {
-    try {
-      setDownloading(true);
-      const y = selectedMonth.year();
-      const m = selectedMonth.month() + 1;
-      const response = await fetch(
-        `${BASE}/calendar/download?year=${y}&startMonth=${m}&months=12`
-      );
-      if (!response.ok) throw new Error("Failed to download calendar");
-      const blob = await response.blob();
-
-      let filename = "calendar.zip";
-      const disposition = response.headers.get("Content-Disposition");
-      if (disposition && disposition.includes("filename=")) {
-        filename = disposition.split("filename=")[1].replace(/["']+/g, "");
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      alert("Download failed. Please try again.");
-      console.error("Error downloading calendar:", error);
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   return (
-    <div
-      id="print-ready"
-      data-state={panelReady ? "ready" : "loading"}
-      className={`min-h-screen bg-gray-100 text-black p-4 calendar-page ${
-        printMode ? "print" : ""
-      }`}
-    >
-      <h1 className="calendar-view-title text-2xl font-bold">
-        CONSECRATED DAYS OF YAHUAH
-      </h1>
-      <h2 className="calendar-view-title text-xl font-semibold mb-2">
-        {selectedMonth.format("MMMM YYYY")} - Enoch 364 Day Calendar
-      </h2>
-
-      {!printMode && (
-        <div className="flex justify-center items-center gap-3 mb-4 flex-wrap">
-          <button
-            onClick={goToPreviousMonth}
-            className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
-          >
-            ← Prev
-          </button>
-          <button
-            onClick={goToNextMonth}
-            className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
-          >
-            Next →
-          </button>
-          <button
-            onClick={DOWNLOAD_ENABLED ? handleDownloadCalendar : undefined}
-            disabled={!DOWNLOAD_ENABLED || downloading}
-            aria-disabled={!DOWNLOAD_ENABLED}
-            title={DOWNLOAD_ENABLED ? "" : "Download coming soon"}
-            className={`px-4 py-2 rounded flex items-center gap-2 text-white ${
-              DOWNLOAD_ENABLED
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-gray-400 cursor-not-allowed opacity-60"
-            }`}
-          >
-            {downloading ? (
-              <span className="loader inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            ) : null}
-            {DOWNLOAD_ENABLED
-              ? downloading
-                ? "Downloading..."
-                : "Download Calendar (.zip)"
-              : "Download (coming soon)"}
-          </button>
+    <div className="p-4 space-y-4">
+      {/* Controls */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={goPrevMonth}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded"
+        >
+          ← Prev
+        </button>
+        <button
+          onClick={goToday}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded"
+        >
+          Today
+        </button>
+        <button
+          onClick={goNextMonth}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded"
+        >
+          Next →
+        </button>
+        <div className="ml-3 text-sm text-gray-600">
+          {selectedMonth.format("YYYY-MM")}
         </div>
-      )}
-
-      {/* Day-of-week header */}
-      <div className="calendar-header">
-        {"Sun Mon Tue Wed Thu Fri Sat".split(" ").map((d) => (
-          <div key={d}>{d}</div>
-        ))}
       </div>
 
-      {/* Grid + Explanations wrapped so only the bottom panel scrolls */}
-      <div className="calendar-content">
-        <div className="calendar-grid">{renderCells(selectedMonth)}</div>
-        {/* ✅ Explanations panel (signals when loaded) */}
-        <ExplanationPanel
-          year={selectedMonth.year()}
-          month={selectedMonth.month() + 1}
-          onLoaded={() => setPanelReady(true)}
-        />
-      </div>
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-px bg-gray-300">{renderCells()}</div>
+
+      {/* Optional panel (now 404-safe) */}
+      <ExplanationPanel
+        year={selectedMonth.year()}
+        month={selectedMonth.month() + 1}
+      />
     </div>
   );
-};
-
-export default CalendarView;
+}
