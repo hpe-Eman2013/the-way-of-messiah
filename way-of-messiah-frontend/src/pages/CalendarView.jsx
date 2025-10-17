@@ -9,11 +9,21 @@ dayjs.extend(utc);
 
 // ---------- Helpers
 const getTitle = (e) => (e?.title ?? e?.name ?? "");
-const keyFromEvent = (e) => e?.dateYmd ?? e?.dateISO?.slice(0, 10) ?? null; // YYYY-MM-DD
-const parseDayNumber = (t) => {
-  const m = String(t || "").match(/^\s*day\s*(\d{1,3})\s*$/i);
-  return m ? parseInt(m[1], 10) : null;
+// Returns YYYY-MM-DD for any of the known date fields
+const toYmd = (v) => {
+  if (!v) return null;
+  if (typeof v === "string") return v.slice(0, 10); // "2025-03-21T00:00:00.000Z" → "2025-03-21"
+  // if somehow a Date object slipped through
+  try { return dayjs.utc(v).format("YYYY-MM-DD"); } catch { return null; }
 };
+
+const keyFromEvent = (e) =>
+  e?.dateYmd ??
+  toYmd(e?.dateISO) ??
+  toYmd(e?.date) ??
+  toYmd(e?.startDate) ??
+  null;
+
 const groupByDay = (items) => {
   const arr = Array.isArray(items) ? items : [];
   return arr.reduce((acc, ev) => {
