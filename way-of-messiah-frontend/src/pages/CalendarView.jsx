@@ -41,8 +41,6 @@ const CalendarView = () => {
 
   const [panelReady, setPanelReady] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   // Toggle this flag to enable/disable the Download button globally
   const DOWNLOAD_ENABLED = false;
   const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
