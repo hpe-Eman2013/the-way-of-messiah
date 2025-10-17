@@ -138,37 +138,39 @@ const CalendarView = () => {
 
       // Use UTC for logic; local only for labels
       const currentDateUTC = dayjs.utc(currentDateLocal.format("YYYY-MM-DD"));
-      const todayEvents = isCurrentMonth
-        ? getEventsByDate(currentDateLocal)
-        : [];
+      const todayEvents = isCurrentMonth ? getEventsByDate(currentDateUTC) : [];
 
       const calculateEnochDay = (dateUTC) => {
-        const lastEnochDay = events.find((e) => e.title === "Day 364");
-        const fallbackEquinox = (() => {
-          const year = selectedMonth.year();
-          const beforeMarch20 = dateUTC.isBefore(dayjs.utc(`${year}-03-20`));
-          if (beforeMarch20 && lastEnochDay) {
-            const lastYmd =
-              lastEnochDay.dateYmd ?? lastEnochDay.dateISO?.slice(0, 10);
-            return dayjs.utc(`${lastYmd}`).add(1, "day");
-          }
-          return dayjs.utc(`${year - 1}-03-20`);
-        })();
+        // 1) Prefer Day 1 from events in this month
+        const day1 = events.find((e) => e.title === "Day 1");
+        if (day1) {
+          const d1 = dayjs.utc(keyFromEvent(day1)); // keyFromEvent gives YYYY-MM-DD
+          if (dateUTC.isBefore(d1)) return null;
+          const n = dateUTC.diff(d1, "day") + 1;
+          return n >= 1 && n <= 364 ? n : null;
+        }
 
-        const actualEquinox = springEquinox
-          ? dayjs.utc(springEquinox)
-          : fallbackEquinox;
-        const firstCycleStart = actualEquinox.add(1, "day"); // Day 1 = day after equinox
-        if (dateUTC.isBefore(firstCycleStart)) return null;
+        // 2) Next best: Day 364 in this month → Day 1 is the next day
+        const d364 = events.find((e) => e.title === "Day 364");
+        if (d364) {
+          const start = dayjs.utc(keyFromEvent(d364)).add(1, "day");
+          if (dateUTC.isBefore(start)) return null;
+          const n = dateUTC.diff(start, "day") + 1;
+          return n >= 1 && n <= 364 ? n : null;
+        }
 
-        const daysSinceFirst = dateUTC.diff(firstCycleStart, "day");
-        const currentCycleStart = firstCycleStart.add(
-          Math.floor(daysSinceFirst / 364) * 364,
-          "day"
-        );
-        const enochDay = dateUTC.diff(currentCycleStart, "day") + 1;
-        return enochDay > 364 ? null : enochDay;
+        // 3) Last resort: if springEquinox exists, Day 1 = equinox + 1
+        if (springEquinox) {
+          const start = dayjs.utc(springEquinox).add(1, "day");
+          if (dateUTC.isBefore(start)) return null;
+          const n = dateUTC.diff(start, "day") + 1;
+          return n >= 1 && n <= 364 ? n : null;
+        }
+
+        // no basis → don't label
+        return null;
       };
+
 
       const enochDay = calculateEnochDay(currentDateUTC);
 
