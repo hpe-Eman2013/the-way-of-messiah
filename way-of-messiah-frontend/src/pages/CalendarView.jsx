@@ -85,8 +85,17 @@ export default function CalendarView() {
           selectedMonth.year(),
           selectedMonth.month()
         );
-        const safe = Array.isArray(raw) ? raw.map(normalizeEvent) : [];
-        if (!cancel) setEvents(safe);
+
+        // Accept array, { items: [...] }, or { events: [...] }
+        const arr = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.events)
+          ? raw.events
+          : [];
+
+        if (!cancel) setEvents(arr.map(normalizeEvent));
       } catch (e) {
         console.error("Error fetching events:", e);
         if (!cancel) setEvents([]);
@@ -122,22 +131,32 @@ export default function CalendarView() {
       try {
         const year = selectedMonth.year();
         const from = dayjs.utc(`${year}-03-01`).format("YYYY-MM-DD");
-        const to   = dayjs.utc(`${year}-04-10`).format("YYYY-MM-DD");
+        const to = dayjs.utc(`${year}-04-10`).format("YYYY-MM-DD");
 
         const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
         const r = await fetch(`${BASE}/api/events?from=${from}&to=${to}`);
         if (!r.ok) throw new Error(`anchor HTTP ${r.status}`);
         const raw = await r.json();
-        const list = Array.isArray(raw) ? raw.map(normalizeEvent) : [];
+        const arr = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.events)
+          ? raw.events
+          : [];
+        const list = arr.map(normalizeEvent);
 
         // Prefer explicit Day 1
-        const d1 = list.find(e => e.dateYmd && parseDayNumber(e.title) === 1);
-        if (!cancel && d1) { setYearAnchor(dayjs.utc(d1.dateYmd)); return; }
+        const d1 = list.find((e) => e.dateYmd && parseDayNumber(e.title) === 1);
+        if (!cancel && d1) {
+          setYearAnchor(dayjs.utc(d1.dateYmd));
+          return;
+        }
 
         // Else derive from any Day N (earliest by date)
         const any = list
-          .filter(e => e.dateYmd && parseDayNumber(e.title))
-          .sort((a,b) => a.dateYmd.localeCompare(b.dateYmd))[0];
+          .filter((e) => e.dateYmd && parseDayNumber(e.title))
+          .sort((a, b) => a.dateYmd.localeCompare(b.dateYmd))[0];
         if (!cancel && any) {
           const n = parseDayNumber(any.title);
           setYearAnchor(dayjs.utc(any.dateYmd).subtract(n - 1, "day"));
@@ -145,25 +164,31 @@ export default function CalendarView() {
         }
 
         // Fallback: equinox + 1 day (if available)
-        if (!cancel) setYearAnchor(springEquinox ? dayjs.utc(springEquinox).add(1,"day") : null);
+        if (!cancel)
+          setYearAnchor(
+            springEquinox ? dayjs.utc(springEquinox).add(1, "day") : null
+          );
       } catch {
-        if (!cancel) setYearAnchor(springEquinox ? dayjs.utc(springEquinox).add(1,"day") : null);
+        if (!cancel)
+          setYearAnchor(
+            springEquinox ? dayjs.utc(springEquinox).add(1, "day") : null
+          );
       }
     })();
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+    };
   }, [selectedMonth.year(), springEquinox]);
 
   /* -------- Month-scope anchor (from current month events) -------- */
   const enochAnchor = useMemo(() => {
     const list = Array.isArray(events) ? events : [];
 
-    // Prefer explicit Day 1
     const d1 = list.find(
       (e) => parseDayNumber(getTitle(e)) === 1 && keyFromEvent(e)
     );
     if (d1) return dayjs.utc(keyFromEvent(d1));
 
-    // Else derive from any Day N (earliest by date)
     const anyDay = list
       .map((e) => {
         const num = parseDayNumber(getTitle(e));
@@ -175,7 +200,6 @@ export default function CalendarView() {
 
     if (anyDay) return dayjs.utc(anyDay.ymd).subtract(anyDay.num - 1, "day");
 
-    // Last resort: equinox + 1 (string)
     return springEquinox ? dayjs.utc(springEquinox).add(1, "day") : null;
   }, [events, springEquinox]);
 
@@ -240,9 +264,7 @@ export default function CalendarView() {
 
       // Only hide raw “Day N” titles if we actually show the computed label
       const displayEvents = enochDay
-        ? todayEvents.filter(
-        (e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e))
-          )
+        ? todayEvents.filter((e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e)))
         : todayEvents;
 
       const key = currentDateUTC.format("YYYY-MM-DD");
@@ -308,6 +330,24 @@ export default function CalendarView() {
         </button>
         <div className="ml-3 text-sm text-gray-600">
           {selectedMonth.format("YYYY-MM")}
+        </div>
+      </div>
+      {/* DEBUG (remove later) */}
+      <div className="text-xs text-gray-600">
+        <div>
+          events: {Array.isArray(events) ? events.length : 0} • days in map:{" "}
+          {Object.keys(byDay || {}).length}
+        </div>
+        <div>
+          anchor (year): {yearAnchor ? yearAnchor.format("YYYY-MM-DD") : "–"} •
+          anchor (month): {enochAnchor ? enochAnchor.format("YYYY-MM-DD") : "–"}
+        </div>
+        <div>
+          sample keys:{" "}
+          {Object.keys(byDay || {})
+            .sort()
+            .slice(0, 5)
+            .join(", ") || "none"}
         </div>
       </div>
 
