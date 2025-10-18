@@ -13,14 +13,13 @@ import {
   extractFeastLabels,
   computeExplanationItems,
   composeCellClass,
-  getTitle, 
-  parseDayNumber, 
+  getTitle,
+  parseDayNumber,
   keyFromEvent,
   toYmd,
 } from "../lib/calendarHelpers.js";
 
 dayjs.extend(utc);
-
 
 // Weekday Helper
 const WEEKDAYS = [
@@ -33,20 +32,6 @@ const WEEKDAYS = [
   "Saturday",
 ];
 // Normalize events so we can rely on `id`, `title`, and `dateYmd`
-useEffect(() => {
-  console.log("[CAL] fetching", selectedMonth.year(), selectedMonth.month());
-}, [selectedMonth]);
-
-useEffect(() => {
-  console.table(
-    (events || []).slice(0, 8).map((e) => ({
-      dateYmd: e.dateYmd,
-      title: e.title,
-      description: e.description, // should be an array
-      searchText: e.searchText, // lowercased joined text
-    }))
-  );
-}, [events]);
 
 export default function CalendarView() {
   // ---- Optional ?year=YYYY&month=M in URL
@@ -66,7 +51,20 @@ export default function CalendarView() {
   const [yearAnchor, setYearAnchor] = useState(null); // dayjs or null
 
   const byDay = useMemo(() => groupByDay(events), [events]);
+  useEffect(() => {
+    console.log("[CAL] fetching", selectedMonth.year(), selectedMonth.month());
+  }, [selectedMonth]);
 
+  useEffect(() => {
+    console.table(
+      (events || []).slice(0, 8).map((e) => ({
+        dateYmd: e.dateYmd,
+        title: e.title,
+        description: e.description, // should be an array
+        searchText: e.searchText, // lowercased joined text
+      }))
+    );
+  }, [events]);
   /* -------- Month events + (optional) equinox fetch -------- */
   useEffect(() => {
     let cancel = false;
