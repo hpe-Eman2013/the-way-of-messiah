@@ -4,7 +4,7 @@ import utc from "dayjs/plugin/utc";
 import axios from "axios";
 import { fetchEventsForMonth } from "../lib/calendarApi";
 import ExplanationPanel from "../components/ExplanationPanel.jsx";
-import { CAL_BASE } from "../lib/api.js";
+import { CAL_BASE, API_BASE } from "../lib/api.js";
 import {
   normalizeEvent,
   groupByDay,
@@ -16,7 +16,6 @@ import {
   getTitle,
   parseDayNumber,
   keyFromEvent,
-  toYmd,
 } from "../lib/calendarHelpers.js";
 
 dayjs.extend(utc);
@@ -52,12 +51,13 @@ export default function CalendarView() {
 
   const byDay = useMemo(() => groupByDay(events), [events]);
   useEffect(() => {
-    console.log("[CAL] fetching", selectedMonth.year(), selectedMonth.month());
-  }, [selectedMonth]);
+    console.log("byDay keys sample:", Object.keys(byDay).slice(0, 10));
+    console.log('byDay["2025-04-03"]:', byDay["2025-04-03"]);
+  }, [byDay]);
 
   useEffect(() => {
     console.table(
-      (events || []).slice(0, 8).map((e) => ({
+      (events || []).slice(0, 12).map((e) => ({
         dateYmd: e.dateYmd,
         title: e.title,
         description: e.description, // should be an array
@@ -65,6 +65,22 @@ export default function CalendarView() {
       }))
     );
   }, [events]);
+  // DEBUG: which month are we fetching?
+  useEffect(() => {
+    console.table(
+      (events || []).slice(0, 15).map((e) => ({
+        dateYmd: e.dateYmd,
+        title: e.title,
+        description: e.description, // should be an array
+        searchText: e.searchText,
+      }))
+    );
+
+    // Quick targeted check for Apr 3
+    const hit = (events || []).find((e) => e.dateYmd === "2025-04-03");
+    console.log("[CHECK] 2025-04-03 present?", !!hit, hit);
+  }, [events]);
+
   /* -------- Month events + (optional) equinox fetch -------- */
   useEffect(() => {
     let cancel = false;
@@ -74,7 +90,17 @@ export default function CalendarView() {
           selectedMonth.year(),
           selectedMonth.month()
         );
-        const safe = Array.isArray(raw) ? raw.map(normalizeEvent) : [];
+
+        // raw is guaranteed an array now, but keep it defensive
+        const arr = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.events)
+          ? raw.events
+          : [];
+
+        const safe = arr.map(normalizeEvent);
         if (!cancel) setEvents(safe);
       } catch (e) {
         console.error("Error fetching events:", e);
@@ -89,12 +115,7 @@ export default function CalendarView() {
         const ymd = res?.data?.equinoxYmd ?? res?.data?.springEquinox ?? null;
         if (!cancel) setSpringEquinox(ymd);
       } catch (err) {
-        if (err?.response?.status === 404) {
-          if (!cancel) setSpringEquinox(null);
-        } else {
-          console.warn("Equinox load (ignored):", err?.message || err);
-          if (!cancel) setSpringEquinox(null);
-        }
+        if (!cancel) setSpringEquinox(null);
       }
     })();
     return () => {
@@ -162,15 +183,15 @@ export default function CalendarView() {
   const enochAnchor = useMemo(() => {
     const list = Array.isArray(events) ? events : [];
 
-    const d1 = list.find(
-      (e) => parseDayNumber(getTitle(e)) === 1 && keyFromEvent(e)
-    );
-    if (d1) return dayjs.utc(keyFromEvent(d1));
+    // Prefer an explicit "Day 1" event with a valid date
+    const d1 = list.find((e) => parseDayNumber(getTitle(e)) === 1 && e.dateYmd);
+    if (d1) return dayjs.utc(d1.dateYmd);
 
+    // Else derive from any "Day N" (earliest by date)
     const anyDay = list
       .map((e) => {
         const num = parseDayNumber(getTitle(e));
-        const ymd = keyFromEvent(e);
+        const ymd = e.dateYmd;
         return num && ymd ? { num, ymd } : null;
       })
       .filter(Boolean)
@@ -178,22 +199,16 @@ export default function CalendarView() {
 
     if (anyDay) return dayjs.utc(anyDay.ymd).subtract(anyDay.num - 1, "day");
 
+    // Fallback: equinox + 1 day (if available)
     return springEquinox ? dayjs.utc(springEquinox).add(1, "day") : null;
   }, [events, springEquinox]);
+
   // Explanation Panel
   // Build explanation lines for the visible month from events
   const explanationItems = useMemo(
     () => computeExplanationItems(byDay, selectedMonth),
     [byDay, selectedMonth]
   );
-
-  /* -------- Lookups & labeling -------- */
-  const getEventsByDate = (dateUtc) => {
-    const key = dateUtc?.format("YYYY-MM-DD");
-    if (!key) return [];
-    const bucket = byDay[key];
-    return Array.isArray(bucket) ? bucket : [];
-  };
 
   // Use the best anchor available: month → year → equinox+1
   const calculateEnochDay = (dateUtc) => {
@@ -222,7 +237,8 @@ export default function CalendarView() {
       const currentDateLabel = currentDateUTC; // use .local() if you prefer local labels
       const isCurrentMonth = currentDateUTC.month() === selectedMonth.month();
 
-      const todayEvents = isCurrentMonth ? getEventsByDate(currentDateUTC) : [];
+      const ymdKey = dayjs.utc(currentDateUTC).format("YYYY-MM-DD");
+      const todayEvents = isCurrentMonth ? byDay[ymdKey] ?? [] : [];
       const enochDay = calculateEnochDay(currentDateUTC);
 
       // Coloring by event titles (you can refine these)
@@ -245,7 +261,22 @@ export default function CalendarView() {
         hasFeast: hasFeastEvent,
         isCurrentMonth,
       });
-
+      // DEBUG LOGS
+      console.log("Date:", currentDateUTC.format("YYYY-MM-DD"), todayEvents);
+      console.log(
+        "Sabbath?",
+        todayEvents.some(isSabbath),
+        "Feast?",
+        todayEvents.some(isFeast),
+        "Feast labels:",
+        todayEvents.flatMap(extractFeastLabels)
+      );
+      if (currentDateUTC.format("YYYY-MM-DD") === "2025-04-03") {
+        console.log("Events on 2025-04-03:", todayEvents);
+      }
+      console.log("byDay[2025-04-03]:", byDay["2025-04-03"]);
+      console.log("All keys in byDay:", Object.keys(byDay));
+      console.log("Raw events:", events);
       // Badges
       const sabbathBadge = hasSabbathEvent ? (
         <span className="inline-block text-[10px] px-1 py-0.5 rounded bg-purple-600 text-white">

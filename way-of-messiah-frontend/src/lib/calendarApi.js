@@ -11,11 +11,22 @@ export async function fetchEventsForMonth(year, monthZeroIndexed) {
     .utc({ year, month: monthZeroIndexed, date: 1 })
     .add(1, "month")
     .format("YYYY-MM-01");
-  const url = `${CAL_BASE}/events?from=${from}&to=${to}`; // <-- no extra /api here
+  const url = `${CAL_BASE}/events?from=${from}&to=${to}`;
+
   const r = await fetch(url);
   if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
-  return r.json();
+  const json = await r.json();
+
+  // Normalize to array regardless of shape
+  return Array.isArray(json)
+    ? json
+    : Array.isArray(json?.items)
+    ? json.items
+    : Array.isArray(json?.events)
+    ? json.events
+    : [];
 }
+
 
 /**
  * Fetch events for an arbitrary UTC date range (YYYY-MM-DD strings).

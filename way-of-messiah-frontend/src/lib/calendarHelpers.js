@@ -16,22 +16,30 @@ export const buildSearchText = (e) => {
 };
 
 /** Normalize an event coming from the API */
+// calendarHelpers.js
 export const normalizeEvent = (e) => {
   const id = (e?.id ?? e?._id ?? "").toString();
   const title = e?.title ?? e?.name ?? "";
+
+  // normalize description to array of strings
   const description = Array.isArray(e?.description)
     ? e.description.map(String)
     : e?.description
     ? [String(e.description)]
     : [];
 
-  // prefer server-provided dateYmd; fallback to ISO fields
-  const dateYmd =
-    e?.dateYmd ??
-    (e?.dateISO ? e.dateISO.slice(0, 10) : null) ??
-    (e?.startDateISO ? e.startDateISO.slice(0, 10) : null);
+  // robust dateYmd derivation (UTC)
+  const rawIso = e?.dateYmd
+    ? `${e.dateYmd}T00:00:00Z`
+    : e?.dateISO ?? e?.date ?? e?.startDateISO ?? null;
 
-  const searchText = buildSearchText({ ...e, title, description });
+  const dateYmd = rawIso ? dayjs.utc(rawIso).format("YYYY-MM-DD") : null;
+
+  const searchText = [description.join(" "), title, e?.name, e?.category]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
   return { ...e, id, title, description, dateYmd, searchText };
 };
 
@@ -39,13 +47,30 @@ export const normalizeEvent = (e) => {
 export const eventText = (e) => e?.searchText ?? buildSearchText(e);
 
 /** Detects Sabbath from event text */
-export const isSabbath = (e) => eventText(e).includes("sabbath");
+export function isSabbath(event) {
+  const sabbathRe = /sabbath/i;
+  return (
+    (event.title && sabbathRe.test(event.title)) ||
+    (event.name && sabbathRe.test(event.name)) ||
+    (Array.isArray(event.description) &&
+      event.description.some((d) => sabbathRe.test(d))) ||
+    (typeof event.description === "string" && sabbathRe.test(event.description))
+  );
+}
 
 /** Detects any Feast from event text */
-export const isFeast = (e) =>
-  /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(
-    eventText(e)
+export function isFeast(event) {
+  const feastRe =
+    /(feast|passover|pesach|unleavened|firstfruits|trumpets|yom teruah|atonement|yom kippur|tabernacles|sukkot|shavuot|pentecost|hanukkah)/i;
+  // Check title, name, and description fields
+  return (
+    (event.title && feastRe.test(event.title)) ||
+    (event.name && feastRe.test(event.name)) ||
+    (Array.isArray(event.description) &&
+      event.description.some((d) => feastRe.test(d))) ||
+    (typeof event.description === "string" && feastRe.test(event.description))
   );
+}
 
 /** Extract user-facing feast labels present in an event */
 export const extractFeastLabels = (e) => {
@@ -73,14 +98,22 @@ export const toYmd = (isoLike) => {
 };
 
 /** Group normalized events by dateYmd */
+// calendarHelpers.js
 export const groupByDay = (items = []) => {
   return (items || []).reduce((acc, e) => {
-    const key = e?.dateYmd ?? toYmd(e?.dateISO) ?? toYmd(e?.date) ?? toYmd(e?.startDateISO);
+    const key =
+      e?.dateYmd ??
+      (e?.dateISO ? e.dateISO.slice(0, 10) : null) ??
+      (e?.startDateISO ? e.startDateISO.slice(0, 10) : null) ??
+      (e?.date ? String(e.date).slice(0, 10) : null); // last resort
+
     if (!key) return acc;
     (acc[key] ||= []).push(e);
     return acc;
   }, {});
 };
+
+
 
 /** Compute explanation lines for a visible month from a byDay map */
 export const computeExplanationItems = (byDay, selectedMonth) => {
