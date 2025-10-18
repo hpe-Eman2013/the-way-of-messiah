@@ -120,35 +120,31 @@ router.get("/events", async (req, res) => {
     }
     if (toStr) {
       const toEnd = new Date(toStr + "T00:00:00Z");
-      toEnd.setUTCDate(toEnd.getUTCDate() + 1); // make 'to' exclusive
+      toEnd.setUTCDate(toEnd.getUTCDate() + 1); // end-exclusive
       match.date = { ...(match.date || {}), $lt: toEnd };
     }
 
+    // 🧹 Simpler, version-safe pipeline (no $type, no $toString)
     const docs = await Event.aggregate([
       { $match: match },
-      { $addFields: { sortKey: { $ifNull: ["$date", "$startDate"] } } },
-      { $sort: { sortKey: 1, title: 1, _id: 1 } },
+      { $addFields: { canonicalDate: { $ifNull: ["$date", "$startDate"] } } },
+      { $sort: { canonicalDate: 1, title: 1, _id: 1 } },
       {
         $project: {
-          id: { $toString: "$_id" },
           title: 1,
           category: 1,
-
-          // ✅ description normalized to array of strings
-          // in the $project stage
-          description: 1, // ← just pass it through, no transforms here
-
+          description: 1, // pass through; normalize in Node
           location: { $ifNull: ["$location", ""] },
           link: { $ifNull: ["$link", ""] },
           time: { $ifNull: ["$time", ""] },
 
-          // All-day
+          // format from canonicalDate if present
           dateISO: {
             $cond: [
-              { $eq: [{ $type: "$date" }, "date"] },
+              { $ne: ["$canonicalDate", null] },
               {
                 $dateToString: {
-                  date: "$date",
+                  date: "$canonicalDate",
                   format: "%Y-%m-%dT%H:%M:%S.%LZ",
                   timezone: "UTC",
                 },
@@ -158,10 +154,10 @@ router.get("/events", async (req, res) => {
           },
           dateYmd: {
             $cond: [
-              { $eq: [{ $type: "$date" }, "date"] },
+              { $ne: ["$canonicalDate", null] },
               {
                 $dateToString: {
-                  date: "$date",
+                  date: "$canonicalDate",
                   format: "%Y-%m-%d",
                   timezone: "UTC",
                 },
@@ -169,46 +165,16 @@ router.get("/events", async (req, res) => {
               null,
             ],
           },
-
-          // Timed (emit only if present)
-          startDateISO: {
-            $cond: [
-              { $eq: [{ $type: "$startDate" }, "date"] },
-              {
-                $dateToString: {
-                  date: "$startDate",
-                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
-                  timezone: "UTC",
-                },
-              },
-              "$$REMOVE",
-            ],
-          },
-          endDateISO: {
-            $cond: [
-              { $eq: [{ $type: "$endDate" }, "date"] },
-              {
-                $dateToString: {
-                  date: "$endDate",
-                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
-                  timezone: "UTC",
-                },
-              },
-              "$$REMOVE",
-            ],
-          },
-          timezone: { $ifNull: ["$timezone", "$$REMOVE"] },
-
-          sortKey: 0,
         },
       },
     ]);
+
+    // 🧰 Normalize in Node (safe on all Mongo versions)
     const out = docs.map((e) => ({
-      id: e.id ?? (e._id ? String(e._id) : undefined),
+      id: e._id ? String(e._id) : e.id ?? undefined,
       title: e.title ?? "",
       category: e.category ?? "",
 
-      // ✅ normalize to array of strings (so frontend can detect Sabbath/Feasts)
       description: Array.isArray(e.description)
         ? e.description.map((x) => String(x))
         : e.description
@@ -219,19 +185,20 @@ router.get("/events", async (req, res) => {
       link: e.link ?? "",
       time: e.time ?? "",
 
-      // keep whatever you projected
       dateISO: e.dateISO ?? null,
       dateYmd: e.dateYmd ?? null,
-      startDateISO: e.startDateISO,
-      endDateISO: e.endDateISO,
-      timezone: e.timezone,
+      // keep raw timed fields available if you need them later
+      startDateISO: e.startDateISO ?? undefined,
+      endDateISO: e.endDateISO ?? undefined,
     }));
-    res.json(out);
+
+    return res.json(out);
   } catch (err) {
-    console.error("GET /api/calendar/events failed:", err); // <— add this
+    console.error("GET /api/calendar/events failed:", err);
     return res.status(500).json({ error: "Failed to load events" });
   }
 });
+
 
 // POST /api/calendar/enoch/:year/feasts
 router.post("/enoch/:year/feasts", async (req, res, next) => {
