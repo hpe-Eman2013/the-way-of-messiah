@@ -13,7 +13,9 @@ const {
 const Event = require("../models/Event");
 const generateCalendarZIP = require("../utils/generateCalendarZIP");
 // TEMP sanity route
-router.get("/ping", (req, res) => res.json({ ok: true, where: "calendarRoutes" }));
+router.get("/ping", (req, res) =>
+  res.json({ ok: true, where: "calendarRoutes" })
+);
 // GET /api/equinox?year=2025
 // Returns the Spring Equinox as YYYY-MM-DD (derived as the day before Day 1).
 router.get("/equinox", async (req, res) => {
@@ -106,21 +108,20 @@ router.get("/download", async (req, res) => {
 // Get all events
 router.get("/events", async (req, res) => {
   try {
-    const { from, to } = req.query;
-    const col = req.app.locals.db.collection("events");
-    const match = { isPublished: true };
-    if (from || to) {
-      const gte = from ? new Date(`${from}T00:00:00.000Z`) : undefined;
-      const lt = to ? new Date(`${to}T00:00:00.000Z`) : undefined;
-      match.$or = [
-        { date: { ...(gte ? { $gte: gte } : {}), ...(lt ? { $lt: lt } : {}) } },
-        {
-          startDate: {
-            ...(gte ? { $gte: gte } : {}),
-            ...(lt ? { $lt: lt } : {}),
-          },
-        },
-      ];
+    const fromStr = req.query.from; // "YYYY-MM-DD"
+    const toStr = req.query.to; // "YYYY-MM-DD"
+
+    const match = {};
+    if (fromStr) {
+      match.date = {
+        ...(match.date || {}),
+        $gte: new Date(fromStr + "T00:00:00Z"),
+      };
+    }
+    if (toStr) {
+      const toEnd = new Date(toStr + "T00:00:00Z");
+      toEnd.setUTCDate(toEnd.getUTCDate() + 1); // make 'to' exclusive
+      match.date = { ...(match.date || {}), $lt: toEnd };
     }
 
     const docs = await Event.aggregate([
@@ -140,19 +141,20 @@ router.get("/events", async (req, res) => {
               in: {
                 $cond: [
                   { $isArray: "$$d" },
-                  { $map: { input: "$$d", as: "x", in: { $toString: "$$x" } } },
+                  // already an array -> coerce each item to a string via $concat
+                  {
+                    $map: {
+                      input: "$$d",
+                      as: "x",
+                      in: { $concat: ["", { $ifNull: ["$$x", ""] }] },
+                    },
+                  },
+                  // single value or missing -> [] or [string]
                   {
                     $cond: [
-                      {
-                        $gt: [
-                          {
-                            $strLenCP: { $ifNull: [{ $toString: "$$d" }, ""] },
-                          },
-                          0,
-                        ],
-                      },
-                      [{ $toString: "$$d" }],
+                      { $or: [{ $eq: ["$$d", null] }, { $eq: ["$$d", ""] }] },
                       [],
+                      [{ $concat: ["", "$$d"] }],
                     ],
                   },
                 ],
@@ -228,8 +230,8 @@ router.get("/events", async (req, res) => {
 
     res.json(docs);
   } catch (err) {
-    console.error("GET /events failed:", err);
-    res.status(500).json({ error: "Failed to load events" });
+    console.error("GET /api/calendar/events failed:", err); // <— add this
+    return res.status(500).json({ error: "Failed to load events" });
   }
 });
 
