@@ -26,7 +26,7 @@ const EventsPage = () => {
       try {
         setLoading(true);
         // ask for published only; backend may ignore this param, which is fine
-        const { data } = await api.get("/api/events", {
+        const { data } = await api.get("/events", {
           params: { limit: 500, published: 1 },
         });
         // support either { items: [...] } or legacy [ ... ]
