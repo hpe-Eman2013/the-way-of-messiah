@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API_BASE from "../lib/api";
+import { API_BASE } from "../lib/api";
 
 export default function DonationSuccess() {
   const [data, setData] = useState(null);

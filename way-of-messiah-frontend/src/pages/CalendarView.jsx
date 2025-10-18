@@ -4,7 +4,7 @@ import utc from "dayjs/plugin/utc";
 import axios from "axios";
 import { fetchEventsForMonth } from "../lib/calendarApi";
 import ExplanationPanel from "../components/ExplanationPanel.jsx";
-import CAL_BASE from "../lib/api.js";
+import { CAL_BASE } from "../lib/api.js";
 
 dayjs.extend(utc);
 
