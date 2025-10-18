@@ -72,12 +72,19 @@ const normalizeEvent = (e) => {
   const title = e?.title ?? e?.name ?? "";
   const dateYmd =
     e?.dateYmd ??
-    toYmd(e?.dateISO) ??
-    toYmd(e?.date) ??
-    toYmd(e?.startDate) ??
-    null;
-  const searchText = buildSearchText(e); // <— add this
-  return { ...e, id, title, dateYmd, searchText };
+    (e?.dateISO ? e.dateISO.slice(0, 10) : null) ??
+    (e?.startDateISO ? e.startDateISO.slice(0, 10) : null);
+
+  // make sure description is always an array of strings
+  const description = Array.isArray(e?.description)
+    ? e.description.map((x) => String(x))
+    : e?.description
+    ? [String(e.description)]
+    : [];
+
+  const searchText = buildSearchText({ ...e, description, title });
+
+  return { ...e, id, title, dateYmd, description, searchText };
 };
 
 // Detectors use searchText first (falls back to building on the fly)
@@ -132,17 +139,8 @@ export default function CalendarView() {
           selectedMonth.year(),
           selectedMonth.month()
         );
-
-        // Accept array, { items: [...] }, or { events: [...] }
-        const arr = Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw?.items)
-          ? raw.items
-          : Array.isArray(raw?.events)
-          ? raw.events
-          : [];
-
-        if (!cancel) setEvents(arr.map(normalizeEvent));
+        const safe = Array.isArray(raw) ? raw.map(normalizeEvent) : [];
+        if (!cancel) setEvents(safe);
       } catch (e) {
         console.error("Error fetching events:", e);
         if (!cancel) setEvents([]);
@@ -309,6 +307,18 @@ export default function CalendarView() {
       const hasSabbathEvent = todayEvents.some(isSabbath);
       const hasFeastEvent = todayEvents.some(isFeast);
 
+      // More visible tint (ring offset so it shows in the gray gaps)
+      const base =
+        "calendar-cell border p-2 min-h-[90px] flex flex-col bg-white";
+      const sabbathCls = hasSabbathEvent
+        ? " ring-2 ring-purple-500 ring-offset-1 ring-offset-gray-300 bg-purple-50"
+        : "";
+      const feastCls = hasFeastEvent
+        ? " ring-2 ring-emerald-600 ring-offset-1 ring-offset-gray-300 bg-emerald-50"
+        : "";
+      const outsideCls = !isCurrentMonth ? " opacity-40" : "";
+      const cellClass = `${base}${sabbathCls}${feastCls}${outsideCls}`;
+
       // Badges
       const sabbathBadge = hasSabbathEvent ? (
         <span className="inline-block text-[10px] px-1 py-0.5 rounded bg-purple-600 text-white">
@@ -326,19 +336,6 @@ export default function CalendarView() {
           </span>
         ))
       );
-
-      // More visible tint (ring offset so it shows in the gray gaps)
-      const base =
-        "calendar-cell border p-2 min-h-[90px] flex flex-col bg-white";
-      const sabbathCls = hasSabbathEvent
-        ? " ring-2 ring-purple-500 ring-offset-1 ring-offset-gray-300 bg-purple-50"
-        : "";
-      const feastCls = hasFeastEvent
-        ? " ring-2 ring-emerald-600 ring-offset-1 ring-offset-gray-300 bg-emerald-50"
-        : "";
-      const outsideCls = !isCurrentMonth ? " opacity-40" : "";
-      const cellClass = `${base}${sabbathCls}${feastCls}${outsideCls}`;
-
       // Only hide raw “Day N” titles if we actually show the computed label
       const displayEvents = enochDay
         ? todayEvents.filter((e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e)))
