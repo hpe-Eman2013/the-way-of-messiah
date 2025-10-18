@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import CAL_BASE from "./apiBase.js";
+import CAL_BASE from "./api.js";
 dayjs.extend(utc);
 
 export async function fetchEventsForMonth(year, monthZeroIndexed) {
