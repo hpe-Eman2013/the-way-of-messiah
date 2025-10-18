@@ -105,7 +105,7 @@ router.get("/download", async (req, res) => {
 router.get("/events", async (req, res) => {
   try {
     const { from, to } = req.query;
-
+    const col = req.app.locals.db.collection("events");
     const match = { isPublished: true };
     if (from || to) {
       const gte = from ? new Date(`${from}T00:00:00.000Z`) : undefined;
@@ -130,7 +130,34 @@ router.get("/events", async (req, res) => {
           id: { $toString: "$_id" },
           title: 1,
           category: 1,
-          description: { $ifNull: ["$description", ""] },
+
+          // ✅ description normalized to array of strings
+          description: {
+            $let: {
+              vars: { d: "$description" },
+              in: {
+                $cond: [
+                  { $isArray: "$$d" },
+                  { $map: { input: "$$d", as: "x", in: { $toString: "$$x" } } },
+                  {
+                    $cond: [
+                      {
+                        $gt: [
+                          {
+                            $strLenCP: { $ifNull: [{ $toString: "$$d" }, ""] },
+                          },
+                          0,
+                        ],
+                      },
+                      [{ $toString: "$$d" }],
+                      [],
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+
           location: { $ifNull: ["$location", ""] },
           link: { $ifNull: ["$link", ""] },
           time: { $ifNull: ["$time", ""] },
