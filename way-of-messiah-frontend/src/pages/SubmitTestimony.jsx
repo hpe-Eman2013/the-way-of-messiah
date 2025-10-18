@@ -1,7 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
 import "../assets/css/SubmitTestimony.css";
-import { Link } from "react-router-dom";
+import { API_BASE } from "../lib/api";
 
 const SubmitTestimony = () => {
   const [name, setName] = useState("");
@@ -19,16 +18,15 @@ const SubmitTestimony = () => {
     if (image) data.append("image", image);
 
     try {
-      const BASE_URL = import.meta.env.VITE_API_URL;
-      const res = await fetch(`${BASE_URL}/api/submit-testimony`, {
+      const res = await fetch(`${API_BASE}/submit-testimony`, {
         method: "POST",
         body: data,
       });
 
       if (res.ok) {
         setStatus("Testimony submitted successfully.");
-      setName("");
-      setMessage("");
+        setName("");
+        setMessage("");
         setImage(null);
       } else {
         const err = await res.json();
@@ -47,18 +45,24 @@ const SubmitTestimony = () => {
         placeholder="Your name (optional)"
         value={name}
         onChange={(e) => setName(e.target.value)}
-      /><br /><br />
+      />
+      <br />
+      <br />
       <textarea
         placeholder="Your testimony"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         required
-      /><br /><br />
-          <input
-            type="file"
-            accept="image/*"
+      />
+      <br />
+      <br />
+      <input
+        type="file"
+        accept="image/*"
         onChange={(e) => setImage(e.target.files[0])}
-      /><br /><br />
+      />
+      <br />
+      <br />
       <button type="submit">Submit</button>
       {status && <p>{status}</p>}
     </form>

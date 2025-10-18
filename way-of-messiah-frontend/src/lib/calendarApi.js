@@ -1,29 +1,27 @@
-// src/api/calendarApi.js
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import CAL_BASE from "./apiBase.js";
+dayjs.extend(utc);
 
-// Ensure your .env has VITE_API_URL pointing at your backend base (e.g., http://localhost:10000 or https://api.wayofmessiah.net)
-const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, ""); // trim trailing slash
-
-const toYMD = (d) => d.toISOString().slice(0, 10);
-
-/**
- * Fetch events for a specific Gregorian month (UTC boundaries).
- * @param {number} year  - e.g., 2025
- * @param {number} month0 - 0=Jan ... 11=Dec
- */
-export async function fetchEventsForMonth(year, month0) {
-  const from = toYMD(new Date(Date.UTC(year, month0, 1)));
-  const to   = toYMD(new Date(Date.UTC(year, month0 + 1, 1)));
-
-  const res = await fetch(`${BASE}/api/events?from=${from}&to=${to}`);
-  if (!res.ok) throw new Error(`Failed to load events (${res.status})`);
-  return res.json();
+export async function fetchEventsForMonth(year, monthZeroIndexed) {
+  const from = dayjs
+    .utc({ year, month: monthZeroIndexed, date: 1 })
+    .format("YYYY-MM-01");
+  const to = dayjs
+    .utc({ year, month: monthZeroIndexed, date: 1 })
+    .add(1, "month")
+    .format("YYYY-MM-01");
+  const url = `${CAL_BASE}/events?from=${from}&to=${to}`; // <-- no extra /api here
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
+  return r.json();
 }
 
 /**
  * Fetch events for an arbitrary UTC date range (YYYY-MM-DD strings).
  */
 export async function fetchEventsRange(fromYmd, toYmd) {
-  const res = await fetch(`${BASE}/api/events?from=${fromYmd}&to=${toYmd}`);
+  const res = await fetch(`${CAL_BASE}/api/events?from=${fromYmd}&to=${toYmd}`);
   if (!res.ok) throw new Error(`Failed to load events (${res.status})`);
   return res.json();
 }

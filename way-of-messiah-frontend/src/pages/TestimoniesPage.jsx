@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import "../assets/css/TestimoniesPage.css";
 import Header from "../components/Header";
+import API_BASE from "../lib/api";
 
 const TestimoniesPage = () => {
   const [testimonies, setTestimonies] = useState([]);
@@ -12,8 +13,7 @@ const TestimoniesPage = () => {
   useEffect(() => {
     const fetchTestimonies = async () => {
       try {
-        const BASE_URL = import.meta.env.VITE_API_URL;
-        const response = await axios.get(`${BASE_URL}/api/testimonies`);
+        const response = await axios.get(`${API_BASE}/testimonies`);
         setTestimonies(response.data);
       } catch (err) {
         setError("Failed to load testimonies.");
@@ -39,8 +39,7 @@ const TestimoniesPage = () => {
     }
 
     try {
-      const BASE_URL = import.meta.env.VITE_API_URL;
-      await axios.post(`${BASE_URL}/api/testimonies/${id}/like`);
+      await axios.post(`${API_BASE}/testimonies/${id}/like`);
 
       // Update local UI
       setTestimonies((prev) =>
@@ -69,10 +68,9 @@ const TestimoniesPage = () => {
         <div className="space-y-6">
           {testimonies.map(
             ({ _id, name, message, imageUrl, createdAt, likes }) => {
-              const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
               const fullImageUrl = imageUrl?.startsWith("http")
                 ? imageUrl
-                : `${BASE}${imageUrl}`;
+                : `${API_BASE}${imageUrl}`;
               console.log("imageUrl:", imageUrl);
               console.log("fullImageUrl:", fullImageUrl);
               return (
@@ -93,10 +91,7 @@ const TestimoniesPage = () => {
                       src={
                         imageUrl.startsWith("http")
                           ? imageUrl
-                          : `${import.meta.env.VITE_API_URL.replace(
-                              /\/$/,
-                              ""
-                            )}${imageUrl}`
+                          : `${API_BASE}${imageUrl}`
                       }
                       alt={`${name}'s testimony`}
                       className="mt-4 max-h-60 object-contain rounded border"

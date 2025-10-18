@@ -4,6 +4,7 @@ import utc from "dayjs/plugin/utc";
 import axios from "axios";
 import { fetchEventsForMonth } from "../lib/calendarApi";
 import ExplanationPanel from "../components/ExplanationPanel.jsx";
+import CAL_BASE from "../lib/apiBase.js";
 
 dayjs.extend(utc);
 
@@ -148,9 +149,8 @@ export default function CalendarView() {
 
       // Equinox is optional; treat 404 as no data
       try {
-        const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
         const res = await axios.get(
-          `${BASE}/api/equinox?year=${selectedMonth.year()}`
+          `${CAL_BASE}/equinox?year=${selectedMonth.year()}`
         );
         const ymd = res?.data?.equinoxYmd ?? res?.data?.springEquinox ?? null;
         if (!cancel) setSpringEquinox(ymd);
@@ -178,8 +178,7 @@ export default function CalendarView() {
         const from = dayjs.utc(`${year}-03-01`).format("YYYY-MM-DD");
         const to = dayjs.utc(`${year}-04-10`).format("YYYY-MM-DD");
 
-        const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-        const r = await fetch(`${BASE}/api/events?from=${from}&to=${to}`);
+        const r = await fetch(`${CAL_BASE}/events?from=${from}&to=${to}`);
         if (!r.ok) throw new Error(`anchor HTTP ${r.status}`);
         const raw = await r.json();
         const arr = Array.isArray(raw)

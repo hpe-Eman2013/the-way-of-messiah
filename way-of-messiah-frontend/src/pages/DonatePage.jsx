@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import API_BASE from "../lib/api";
 
 const PRESETS = [10, 25, 50, 100, 250];
 
@@ -13,9 +14,6 @@ export default function DonationPage() {
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Backend base
-  const base = import.meta.env.VITE_API_URL || "http://localhost:10000";
 
   // Fee settings (adjust to your Stripe plan if needed)
   const FEE_RATE = 0.029; // 2.9%
@@ -55,16 +53,14 @@ export default function DonationPage() {
     try {
       setLoading(true);
       const endpoint =
-        mode === "monthly"
-          ? "/api/donations/subscription"
-          : "/api/donations/checkout";
+        mode === "monthly" ? "/donations/subscription" : "/donations/checkout";
 
       const payload =
         mode === "monthly"
           ? { tierAmount: totalAmount, email, note, name }
           : { amount: totalAmount, email, note, name };
 
-      const res = await fetch(`${base}${endpoint}`, {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
