@@ -13,50 +13,15 @@ import {
   extractFeastLabels,
   computeExplanationItems,
   composeCellClass,
+  getTitle, 
+  parseDayNumber, 
+  keyFromEvent,
+  toYmd,
 } from "../lib/calendarHelpers.js";
 
 dayjs.extend(utc);
 
-/* ----------------- Helpers ----------------- */
 
-// Accept title from either `title` or `name`
-const getTitle = (e) => e?.title ?? e?.name ?? "";
-
-// Parse "Day N" from titles like "Day 1", "day 12", etc.
-const parseDayNumber = (t) => {
-  const m = String(t || "").match(/^\s*day\s*(\d{1,3})\s*$/i);
-  return m ? parseInt(m[1], 10) : null;
-};
-
-// Convert any supported date-ish field to YYYY-MM-DD
-const toYmd = (v) => {
-  if (!v) return null;
-  if (typeof v === "string") return v.slice(0, 10);
-  try {
-    return dayjs.utc(v).format("YYYY-MM-DD");
-  } catch {
-    return null;
-  }
-};
-
-// Get the day key we use for lookup
-const keyFromEvent = (e) =>
-  e?.dateYmd ??
-  toYmd(e?.dateISO) ??
-  toYmd(e?.date) ??
-  toYmd(e?.startDate) ??
-  null;
-
-// Build a map: YYYY-MM-DD -> [events]
-const groupByDay = (items) => {
-  const arr = Array.isArray(items) ? items : [];
-  return arr.reduce((acc, ev) => {
-    const k = keyFromEvent(ev);
-    if (!k) return acc;
-    (acc[k] ||= []).push(ev);
-    return acc;
-  }, {});
-};
 // Weekday Helper
 const WEEKDAYS = [
   "Sunday",
@@ -68,58 +33,6 @@ const WEEKDAYS = [
   "Saturday",
 ];
 // Normalize events so we can rely on `id`, `title`, and `dateYmd`
-// Build lowercase text we can search (description[] | description | title | name | category)
-const buildSearchText = (e) => {
-  const parts = [];
-  if (Array.isArray(e?.description)) parts.push(e.description.join(" "));
-  else if (e?.description) parts.push(String(e.description));
-  parts.push(e?.title, e?.name, e?.category);
-  return parts.filter(Boolean).join(" ").toLowerCase();
-};
-
-const normalizeEvent = (e) => {
-  const id = (e?.id ?? e?._id ?? "").toString();
-  const title = e?.title ?? e?.name ?? "";
-  const dateYmd =
-    e?.dateYmd ??
-    (e?.dateISO ? e.dateISO.slice(0, 10) : null) ??
-    (e?.startDateISO ? e.startDateISO.slice(0, 10) : null);
-
-  // make sure description is always an array of strings
-  const description = Array.isArray(e?.description)
-    ? e.description.map((x) => String(x))
-    : e?.description
-    ? [String(e.description)]
-    : [];
-
-  const searchText = buildSearchText({ ...e, description, title });
-
-  return { ...e, id, title, dateYmd, description, searchText };
-};
-
-// Detectors use searchText first (falls back to building on the fly)
-const eventText = (e) => e?.searchText ?? buildSearchText(e);
-
-const isSabbath = (e) => eventText(e).includes("sabbath");
-
-const isFeast = (e) =>
-  /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(
-    eventText(e)
-  );
-
-const extractFeastLabels = (e) => {
-  const labels = new Set();
-  const hay = eventText(e);
-  if (/passover/i.test(hay)) labels.add("Passover");
-  if (/unleavened/i.test(hay)) labels.add("Unleavened Bread");
-  if (/first\s*fruits/i.test(hay)) labels.add("First Fruits");
-  if (/\bweeks\b|pentecost/i.test(hay)) labels.add("Weeks / Pentecost");
-  if (/trumpets/i.test(hay)) labels.add("Trumpets");
-  if (/atonement/i.test(hay)) labels.add("Atonement");
-  if (/tabernacles|booths/i.test(hay)) labels.add("Tabernacles");
-  if (/last\s*great\s*day/i.test(hay)) labels.add("Last Great Day");
-  return [...labels];
-};
 
 export default function CalendarView() {
   // ---- Optional ?year=YYYY&month=M in URL

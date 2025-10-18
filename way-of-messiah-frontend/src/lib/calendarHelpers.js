@@ -116,3 +116,17 @@ export const composeCellClass = ({ hasSabbath, hasFeast, isCurrentMonth }) => {
   const outsideCls = isCurrentMonth ? "" : " opacity-40";
   return `${base}${sabbathCls}${feastCls}${outsideCls}`;
 };
+/** Preferred display title for an event */
+export const getTitle = (e) =>
+  String(e?.title ?? e?.name ?? "").trim();
+
+/** Extract the Enoch day number from a title like "Day 59". Returns number | null */
+export const parseDayNumber = (e) => {
+  const t = getTitle(e).toLowerCase();
+  const m = t.match(/\bday\s*(\d{1,3})\b/);
+  return m ? Number(m[1]) : null;
+};
+
+/** Stable key for React lists or grouping */
+export const keyFromEvent = (e) =>
+  (e?.id ?? e?._id ?? `${e?.dateYmd ?? ""}:${getTitle(e)}`).toString();
