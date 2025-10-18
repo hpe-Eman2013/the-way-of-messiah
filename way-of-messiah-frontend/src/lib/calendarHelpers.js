@@ -1,13 +1,53 @@
-// src/lib/calendarHelpers.js
 // Centralized helpers for the Enoch calendar views
-// Keep your components lean by importing from here.
-
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 
+/** Normalize one raw event from the API/DB into a shape the calendar expects */
+export const normalizeEvent = (e) => {
+  // Accept several possible date fields; convert to YYYY-MM-DD (UTC)
+  const iso = e?.dateYmd || e?.date || e?.when || e?.startDate;
+  const ymd = iso ? dayjs.utc(iso).format("YYYY-MM-DD") : null;
+
+  // Normalize description → array of strings for easy scanning
+  const descArr = Array.isArray(e?.description)
+    ? e.description
+    : e?.description
+    ? [String(e.description)]
+    : [];
+
+  return {
+    id: e?._id || e?.id,
+    title: String(e?.title ?? e?.name ?? "").trim(),
+    name: e?.name,
+    category: e?.category,
+    description: descArr, // always an array now
+    dateYmd: ymd,
+    raw: e,
+  };
+};
+
+/** Group events by UTC YYYY-MM-DD */
+export const groupByDay = (events) =>
+  (Array.isArray(events) ? events : []).reduce((acc, ev) => {
+    const key = ev?.dateYmd;
+    if (!key) return acc;
+    (acc[key] ||= []).push(ev);
+    return acc;
+  }, {});
+
+/** Preferred display title */
+export const getTitle = (e) => String(e?.title ?? e?.name ?? "").trim();
+
+/** Extract the Enoch day number from a title like "Day 59" */
+export const parseDayNumber = (e) => {
+  const t = getTitle(e).toLowerCase();
+  const m = t.match(/\bday\s*(\d{1,3})\b/);
+  return m ? Number(m[1]) : null;
+};
+
 /** Build lowercase text to search for Sabbath/Feast keywords */
-export const buildSearchText = (e) => {
+const buildSearchText = (e) => {
   const parts = [];
   if (Array.isArray(e?.description)) parts.push(e.description.join(" "));
   else if (e?.description) parts.push(String(e.description));
@@ -15,151 +55,85 @@ export const buildSearchText = (e) => {
   return parts.filter(Boolean).join(" ").toLowerCase();
 };
 
-/** Normalize an event coming from the API */
-// calendarHelpers.js
-export const normalizeEvent = (e) => {
-  const id = (e?.id ?? e?._id ?? "").toString();
-  const title = e?.title ?? e?.name ?? "";
+export const isSabbath = (e) => buildSearchText(e).includes("sabbath");
 
-  // normalize description to array of strings
-  const description = Array.isArray(e?.description)
-    ? e.description.map(String)
-    : e?.description
-    ? [String(e.description)]
-    : [];
+const FEAST_KEYWORDS = [
+  "passover",
+  "unleavened",
+  "firstfruits",
+  "weeks", // Shavuot
+  "pentecost",
+  "trumpets",
+  "atonement",
+  "tabernacles",
+  "sukkot",
+  "dedication",
+  "hanukkah",
+];
 
-  // robust dateYmd derivation (UTC)
-  const rawIso = e?.dateYmd
-    ? `${e.dateYmd}T00:00:00Z`
-    : e?.dateISO ?? e?.date ?? e?.startDateISO ?? null;
-
-  const dateYmd = rawIso ? dayjs.utc(rawIso).format("YYYY-MM-DD") : null;
-
-  const searchText = [description.join(" "), title, e?.name, e?.category]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return { ...e, id, title, description, dateYmd, searchText };
+export const isFeast = (e) => {
+  const t = buildSearchText(e);
+  return FEAST_KEYWORDS.some((k) => t.includes(k));
 };
 
-/** Safe text access for detectors */
-export const eventText = (e) => e?.searchText ?? buildSearchText(e);
-
-/** Detects Sabbath from event text */
-export function isSabbath(event) {
-  const sabbathRe = /sabbath/i;
-  return (
-    (event.title && sabbathRe.test(event.title)) ||
-    (event.name && sabbathRe.test(event.name)) ||
-    (Array.isArray(event.description) &&
-      event.description.some((d) => sabbathRe.test(d))) ||
-    (typeof event.description === "string" && sabbathRe.test(event.description))
-  );
-}
-
-/** Detects any Feast from event text */
-export function isFeast(event) {
-  const feastRe =
-    /(feast|passover|pesach|unleavened|firstfruits|trumpets|yom teruah|atonement|yom kippur|tabernacles|sukkot|shavuot|pentecost|hanukkah)/i;
-  // Check title, name, and description fields
-  return (
-    (event.title && feastRe.test(event.title)) ||
-    (event.name && feastRe.test(event.name)) ||
-    (Array.isArray(event.description) &&
-      event.description.some((d) => feastRe.test(d))) ||
-    (typeof event.description === "string" && feastRe.test(event.description))
-  );
-}
-
-/** Extract user-facing feast labels present in an event */
-export const extractFeastLabels = (e) => {
+/** Get a compact label string for a day's feasts (e.g., "Passover, Unleavened Bread") */
+export const extractFeastLabels = (eventsForDay) => {
   const labels = new Set();
-  const hay = eventText(e);
-  if (/passover/i.test(hay)) labels.add("Passover");
-  if (/unleavened/i.test(hay)) labels.add("Unleavened Bread");
-  if (/first\s*fruits/i.test(hay)) labels.add("First Fruits");
-  if (/\bweeks\b|pentecost/i.test(hay)) labels.add("Weeks / Pentecost");
-  if (/trumpets/i.test(hay)) labels.add("Trumpets");
-  if (/atonement/i.test(hay)) labels.add("Atonement");
-  if (/tabernacles|booths/i.test(hay)) labels.add("Tabernacles");
-  if (/last\s*great\s*day/i.test(hay)) labels.add("Last Great Day");
-  return [...labels];
+  (eventsForDay || []).forEach((e) => {
+    if (isSabbath(e)) labels.add("Sabbath");
+    // prefer explicit description labels if present
+    if (Array.isArray(e.description)) {
+      e.description.forEach((d) => {
+        const s = String(d).trim();
+        if (s) labels.add(s);
+      });
+    } else if (isFeast(e)) {
+      // fallback: infer from text
+      const text = buildSearchText(e);
+      FEAST_KEYWORDS.forEach((k) => {
+        if (text.includes(k)) labels.add(k[0].toUpperCase() + k.slice(1));
+      });
+    }
+  });
+  return Array.from(labels);
 };
 
-/** Convert various ISO-ish inputs to YYYY-MM-DD (UTC) */
-export const toYmd = (isoLike) => {
-  if (!isoLike) return null;
-  try {
-    return dayjs.utc(isoLike).format("YYYY-MM-DD");
-  } catch {
-    return null;
-  }
-};
-
-/** Group normalized events by dateYmd */
-// calendarHelpers.js
-export const groupByDay = (items = []) => {
-  return (items || []).reduce((acc, e) => {
-    const key =
-      e?.dateYmd ??
-      (e?.dateISO ? e.dateISO.slice(0, 10) : null) ??
-      (e?.startDateISO ? e.startDateISO.slice(0, 10) : null) ??
-      (e?.date ? String(e.date).slice(0, 10) : null); // last resort
-
-    if (!key) return acc;
-    (acc[key] ||= []).push(e);
-    return acc;
-  }, {});
-};
-
-
-
-/** Compute explanation lines for a visible month from a byDay map */
+/** Explanation list builder used by the bottom panel */
 export const computeExplanationItems = (byDay, selectedMonth) => {
   const items = [];
-  const monthPrefix = selectedMonth.format("YYYY-MM");
-  Object.entries(byDay).forEach(([ymd, list]) => {
-    if (!ymd.startsWith(monthPrefix)) return;
-    const labelDate = dayjs.utc(ymd).format("MMM D");
-    const labels = [];
-    if (list.some(isSabbath)) labels.push("Sabbath");
-    const feastSet = new Set(list.flatMap(extractFeastLabels));
-    feastSet.forEach((l) => labels.push(l));
-    if (labels.length) items.push(`${labelDate}: ${labels.join(", ")}`);
-  });
+  const year = selectedMonth.year();
+  const month = selectedMonth.month() + 1;
+  const daysInMonth = selectedMonth.daysInMonth();
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ymd = dayjs
+      .utc({ year, month: month - 1, date: d })
+      .format("YYYY-MM-DD");
+    const events = byDay[ymd] || [];
+    if (!events.length) continue;
+
+    const labels = extractFeastLabels(events);
+    if (labels.length) {
+      items.push({
+        ymd,
+        humanDate: dayjs.utc(ymd).format("MMM D"),
+        labels,
+      });
+    }
+  }
   return items;
 };
 
-/** Utility to build a month range in YYYY-MM-DD (UTC) */
-export const getMonthRange = (year, monthZeroIndexed) => {
-  const from = dayjs.utc({ year, month: monthZeroIndexed, date: 1 }).format("YYYY-MM-01");
-  const to = dayjs
-    .utc({ year, month: monthZeroIndexed, date: 1 })
-    .add(1, "month")
-    .format("YYYY-MM-01");
-  return { from, to };
+/** Basic cell ring class logic (you may already have this) */
+export const composeCellClass = ({
+  isCurrentMonth,
+  hasSabbathEvent,
+  hasFeastEvent,
+}) => {
+  const rings = hasSabbathEvent
+    ? "ring-2 ring-orange-400"
+    : hasFeastEvent
+    ? "ring-2 ring-red-500"
+    : "";
+  return `${isCurrentMonth ? "bg-white" : "bg-gray-100"} ${rings}`;
 };
-
-/** Tailwind-aware class builder for a calendar cell */
-export const composeCellClass = ({ hasSabbath, hasFeast, isCurrentMonth }) => {
-  const base = "border p-2 min-h-[90px] flex flex-col bg-white";
-  const sabbathCls = hasSabbath ? " ring-2 ring-purple-500 ring-offset-1 ring-offset-gray-300 bg-purple-50" : "";
-  const feastCls = hasFeast ? " ring-2 ring-emerald-600 ring-offset-1 ring-offset-gray-300 bg-emerald-50" : "";
-  const outsideCls = isCurrentMonth ? "" : " opacity-40";
-  return `${base}${sabbathCls}${feastCls}${outsideCls}`;
-};
-/** Preferred display title for an event */
-export const getTitle = (e) =>
-  String(e?.title ?? e?.name ?? "").trim();
-
-/** Extract the Enoch day number from a title like "Day 59". Returns number | null */
-export const parseDayNumber = (e) => {
-  const t = getTitle(e).toLowerCase();
-  const m = t.match(/\bday\s*(\d{1,3})\b/);
-  return m ? Number(m[1]) : null;
-};
-
-/** Stable key for React lists or grouping */
-export const keyFromEvent = (e) =>
-  (e?.id ?? e?._id ?? `${e?.dateYmd ?? ""}:${getTitle(e)}`).toString();
