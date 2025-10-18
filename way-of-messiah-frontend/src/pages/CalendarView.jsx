@@ -5,6 +5,15 @@ import axios from "axios";
 import { fetchEventsForMonth } from "../lib/calendarApi";
 import ExplanationPanel from "../components/ExplanationPanel.jsx";
 import { CAL_BASE } from "../lib/api.js";
+import {
+  normalizeEvent,
+  groupByDay,
+  isSabbath,
+  isFeast,
+  extractFeastLabels,
+  computeExplanationItems,
+  composeCellClass,
+} from "../lib/calendarHelpers.js";
 
 dayjs.extend(utc);
 
@@ -248,20 +257,10 @@ export default function CalendarView() {
   }, [events, springEquinox]);
   // Explanation Panel
   // Build explanation lines for the visible month from events
-  const explanationItems = useMemo(() => {
-    const items = [];
-    const monthPrefix = selectedMonth.format("YYYY-MM");
-    Object.entries(byDay).forEach(([ymd, list]) => {
-      if (!ymd.startsWith(monthPrefix)) return;
-      const labelDate = dayjs.utc(ymd).format("MMM D"); // <-- capital D
-      const labels = [];
-      if (list.some(isSabbath)) labels.push("Sabbath");
-      const feastSet = new Set(list.flatMap(extractFeastLabels));
-      feastSet.forEach((l) => labels.push(l));
-      if (labels.length) items.push(`${labelDate}: ${labels.join(", ")}`);
-    });
-    return items;
-  }, [byDay, selectedMonth]);
+  const explanationItems = useMemo(
+    () => computeExplanationItems(byDay, selectedMonth),
+    [byDay, selectedMonth]
+  );
 
   /* -------- Lookups & labeling -------- */
   const getEventsByDate = (dateUtc) => {
@@ -316,7 +315,11 @@ export default function CalendarView() {
         ? " ring-2 ring-emerald-600 ring-offset-1 ring-offset-gray-300 bg-emerald-50"
         : "";
       const outsideCls = !isCurrentMonth ? " opacity-40" : "";
-      const cellClass = `${base}${sabbathCls}${feastCls}${outsideCls}`;
+      const cellClass = composeCellClass({
+        hasSabbath: hasSabbathEvent,
+        hasFeast: hasFeastEvent,
+        isCurrentMonth,
+      });
 
       // Badges
       const sabbathBadge = hasSabbathEvent ? (
