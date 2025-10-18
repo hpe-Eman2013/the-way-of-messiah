@@ -15,7 +15,6 @@ import {
   composeCellClass,
   getTitle,
   parseDayNumber,
-  keyFromEvent,
 } from "../lib/calendarHelpers.js";
 
 dayjs.extend(utc);
