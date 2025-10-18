@@ -135,32 +135,8 @@ router.get("/events", async (req, res) => {
           category: 1,
 
           // ✅ description normalized to array of strings
-          description: {
-            $let: {
-              vars: { d: "$description" },
-              in: {
-                $cond: [
-                  { $isArray: "$$d" },
-                  // already an array -> coerce each item to a string via $concat
-                  {
-                    $map: {
-                      input: "$$d",
-                      as: "x",
-                      in: { $concat: ["", { $ifNull: ["$$x", ""] }] },
-                    },
-                  },
-                  // single value or missing -> [] or [string]
-                  {
-                    $cond: [
-                      { $or: [{ $eq: ["$$d", null] }, { $eq: ["$$d", ""] }] },
-                      [],
-                      [{ $concat: ["", "$$d"] }],
-                    ],
-                  },
-                ],
-              },
-            },
-          },
+          // in the $project stage
+          description: 1, // ← just pass it through, no transforms here
 
           location: { $ifNull: ["$location", ""] },
           link: { $ifNull: ["$link", ""] },
@@ -227,8 +203,30 @@ router.get("/events", async (req, res) => {
         },
       },
     ]);
+    const out = docs.map((e) => ({
+      id: e.id ?? (e._id ? String(e._id) : undefined),
+      title: e.title ?? "",
+      category: e.category ?? "",
 
-    res.json(docs);
+      // ✅ normalize to array of strings (so frontend can detect Sabbath/Feasts)
+      description: Array.isArray(e.description)
+        ? e.description.map((x) => String(x))
+        : e.description
+        ? [String(e.description)]
+        : [],
+
+      location: e.location ?? "",
+      link: e.link ?? "",
+      time: e.time ?? "",
+
+      // keep whatever you projected
+      dateISO: e.dateISO ?? null,
+      dateYmd: e.dateYmd ?? null,
+      startDateISO: e.startDateISO,
+      endDateISO: e.endDateISO,
+      timezone: e.timezone,
+    }));
+    res.json(out);
   } catch (err) {
     console.error("GET /api/calendar/events failed:", err); // <— add this
     return res.status(500).json({ error: "Failed to load events" });
