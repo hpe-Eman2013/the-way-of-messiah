@@ -33,6 +33,20 @@ const WEEKDAYS = [
   "Saturday",
 ];
 // Normalize events so we can rely on `id`, `title`, and `dateYmd`
+useEffect(() => {
+  console.log("[CAL] fetching", selectedMonth.year(), selectedMonth.month());
+}, [selectedMonth]);
+
+useEffect(() => {
+  console.table(
+    (events || []).slice(0, 8).map((e) => ({
+      dateYmd: e.dateYmd,
+      title: e.title,
+      description: e.description, // should be an array
+      searchText: e.searchText, // lowercased joined text
+    }))
+  );
+}, [events]);
 
 export default function CalendarView() {
   // ---- Optional ?year=YYYY&month=M in URL
