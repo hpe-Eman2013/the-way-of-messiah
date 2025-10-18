@@ -35,7 +35,7 @@ app.use(
 // APIs
 app.use("/api/donations", donationsRouter);
 app.use("/api/events", eventsRouter);
-app.use("/api/calendar", calendarRoutes);
+app.use("/api", calendarRoutes);
 app.use("/api/uploads", uploadRouter); // for POST/DELETE uploads
 
 // Public static files (GET)
@@ -107,60 +107,66 @@ app.get("/_routes", (req, res) => {
   res.json(routes);
 });
 // GET approved testimonies
-app.get("/api/testimonies", async(req, res) => {
-    try {
-        const testimonies = await Testimony.find({ approved: true }).sort({ createdAt: -1 });
-        res.json(testimonies);
-    } catch (err) {
-        res.status(500).json({ error: "Failed to fetch testimonies" });
-    }
+app.get("/testimonies", async (req, res) => {
+  try {
+    const testimonies = await Testimony.find({ approved: true }).sort({
+      createdAt: -1,
+    });
+    res.json(testimonies);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch testimonies" });
+  }
 });
 
 // PATCH to approve/unapprove a testimony
-app.patch("/api/testimonies/:id/approve", async(req, res) => {
-    try {
-        const { id } = req.params;
-        const { approved } = req.body;
-        const updated = await Testimony.findByIdAndUpdate(id, { approved }, { new: true });
-        res.json(updated);
-    } catch (err) {
-        res.status(500).json({ error: "Failed to update approval status" });
-    }
+app.patch("/testimonies/:id/approve", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approved } = req.body;
+    const updated = await Testimony.findByIdAndUpdate(
+      id,
+      { approved },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update approval status" });
+  }
 });
 
 // POST testimony (with optional image upload or URL)
-app.post("/api/submit-testimony", upload.single("image"), async(req, res) => {
-    console.log("📥 BODY:", req.body);
-    console.log("🖼️ FILE:", req.file);
-    const { name, message, imageUrl: submittedUrl } = req.body;
+app.post("/submit-testimony", upload.single("image"), async (req, res) => {
+  console.log("📥 BODY:", req.body);
+  console.log("🖼️ FILE:", req.file);
+  const { name, message, imageUrl: submittedUrl } = req.body;
 
-    if (!message) {
-        return res.status(400).json({ error: "Message is required." });
-    }
+  if (!message) {
+    return res.status(400).json({ error: "Message is required." });
+  }
 
-    let finalImageUrl = "";
+  let finalImageUrl = "";
 
-    if (req.file) {
-        finalImageUrl = `/uploads/${req.file.filename}`;
-    } else if (submittedUrl) {
-        finalImageUrl = submittedUrl;
-    }
+  if (req.file) {
+    finalImageUrl = `/uploads/${req.file.filename}`;
+  } else if (submittedUrl) {
+    finalImageUrl = submittedUrl;
+  }
 
-    try {
-        const testimony = new Testimony({
-            name,
-            message,
-            imageUrl: finalImageUrl,
-            approved: false,
-            createdAt: new Date(),
-        });
+  try {
+    const testimony = new Testimony({
+      name,
+      message,
+      imageUrl: finalImageUrl,
+      approved: false,
+      createdAt: new Date(),
+    });
 
-        await testimony.save();
-        res.status(200).json({ message: "Testimony submitted successfully!" });
-    } catch (err) {
-        console.error("MongoDB Save Error:", err);
-        res.status(500).json({ error: "Failed to save testimony." });
-    }
+    await testimony.save();
+    res.status(200).json({ message: "Testimony submitted successfully!" });
+  } catch (err) {
+    console.error("MongoDB Save Error:", err);
+    res.status(500).json({ error: "Failed to save testimony." });
+  }
 });
 
 // MongoDB connection
