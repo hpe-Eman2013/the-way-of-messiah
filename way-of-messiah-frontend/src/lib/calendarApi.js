@@ -21,7 +21,7 @@ export async function fetchEventsForMonth(year, monthZeroIndexed) {
  * Fetch events for an arbitrary UTC date range (YYYY-MM-DD strings).
  */
 export async function fetchEventsRange(fromYmd, toYmd) {
-  const res = await fetch(`${CAL_BASE}/api/events?from=${fromYmd}&to=${toYmd}`);
+  const res = await fetch(`${CAL_BASE}/events?from=${fromYmd}&to=${toYmd}`);
   if (!res.ok) throw new Error(`Failed to load events (${res.status})`);
   return res.json();
 }
