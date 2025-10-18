@@ -32,10 +32,16 @@ app.use(
     credentials: true, // allow cookies
   })
 );
+// TEMP logger: shows every request path
+app.use((req, _res, next) => {
+  console.log("→", req.method, req.originalUrl);
+  next();
+});
+
 // APIs
 app.use("/api/donations", donationsRouter);
 app.use("/api/events", eventsRouter);
-app.use("/api", calendarRoutes);
+app.use("/api/calendar", calendarRoutes);
 app.use("/api/uploads", uploadRouter); // for POST/DELETE uploads
 
 // Public static files (GET)

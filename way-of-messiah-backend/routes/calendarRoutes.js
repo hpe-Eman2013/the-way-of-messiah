@@ -12,6 +12,8 @@ const {
 // ⬇️ Add your Mongoose model
 const Event = require("../models/Event");
 const generateCalendarZIP = require("../utils/generateCalendarZIP");
+// TEMP sanity route
+router.get("/ping", (req, res) => res.json({ ok: true, where: "calendarRoutes" }));
 // GET /api/equinox?year=2025
 // Returns the Spring Equinox as YYYY-MM-DD (derived as the day before Day 1).
 router.get("/equinox", async (req, res) => {
