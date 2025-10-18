@@ -29,19 +29,6 @@ const toYmd = (v) => {
   }
 };
 
-// Normalize events so we can rely on `id`, `title`, and `dateYmd`
-const normalizeEvent = (e) => {
-  const id = (e?.id ?? e?._id ?? "").toString();
-  const title = e?.title ?? e?.name ?? "";
-  const dateYmd =
-    e?.dateYmd ??
-    toYmd(e?.dateISO) ??
-    toYmd(e?.date) ??
-    toYmd(e?.startDate) ??
-    null;
-  return { ...e, id, title, dateYmd };
-};
-
 // Get the day key we use for lookup
 const keyFromEvent = (e) =>
   e?.dateYmd ??
@@ -70,33 +57,39 @@ const WEEKDAYS = [
   "Friday",
   "Saturday",
 ];
-// Feast Helper
-const isFeastTitle = (t) =>
-  /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(
-    String(t || "")
-  );
-// Sabbath Helper
-const isSabbathTitle = (t) => /sabbath/i.test(String(t || ""));
-// Build a lowercase “haystack” of all relevant text for an event
-const eventText = (e) => {
-  const pieces = [];
-  if (Array.isArray(e?.description)) pieces.push(e.description.join(" "));
-  else if (e?.description) pieces.push(String(e.description));
-
-  pieces.push(e?.title, e?.name, e?.category);
-  return pieces.filter(Boolean).join(" ").toLowerCase();
+// Normalize events so we can rely on `id`, `title`, and `dateYmd`
+// Build lowercase text we can search (description[] | description | title | name | category)
+const buildSearchText = (e) => {
+  const parts = [];
+  if (Array.isArray(e?.description)) parts.push(e.description.join(" "));
+  else if (e?.description) parts.push(String(e.description));
+  parts.push(e?.title, e?.name, e?.category);
+  return parts.filter(Boolean).join(" ").toLowerCase();
 };
 
-// True if event mentions Sabbath (prefer description, but tolerant)
+const normalizeEvent = (e) => {
+  const id = (e?.id ?? e?._id ?? "").toString();
+  const title = e?.title ?? e?.name ?? "";
+  const dateYmd =
+    e?.dateYmd ??
+    toYmd(e?.dateISO) ??
+    toYmd(e?.date) ??
+    toYmd(e?.startDate) ??
+    null;
+  const searchText = buildSearchText(e); // <— add this
+  return { ...e, id, title, dateYmd, searchText };
+};
+
+// Detectors use searchText first (falls back to building on the fly)
+const eventText = (e) => e?.searchText ?? buildSearchText(e);
+
 const isSabbath = (e) => eventText(e).includes("sabbath");
 
-// True if event mentions any feast keywords
 const isFeast = (e) =>
   /passover|unleavened|first\s*fruits|weeks|pentecost|trumpets|atonement|tabernacles|booths|last\s*great\s*day/i.test(
     eventText(e)
   );
 
-// Extract specific feast labels for badges (from description/title/etc.)
 const extractFeastLabels = (e) => {
   const labels = new Set();
   const hay = eventText(e);
@@ -263,12 +256,12 @@ export default function CalendarView() {
     const monthPrefix = selectedMonth.format("YYYY-MM");
     Object.entries(byDay).forEach(([ymd, list]) => {
       if (!ymd.startsWith(monthPrefix)) return;
-      const mmmd = dayjs.utc(ymd).format("MMM D");
+      const labelDate = dayjs.utc(ymd).format("MMM D"); // <-- capital D
       const labels = [];
       if (list.some(isSabbath)) labels.push("Sabbath");
       const feastSet = new Set(list.flatMap(extractFeastLabels));
       feastSet.forEach((l) => labels.push(l));
-      if (labels.length) items.push(`${mmmd}: ${labels.join(", ")}`);
+      if (labels.length) items.push(`${labelDate}: ${labels.join(", ")}`);
     });
     return items;
   }, [byDay, selectedMonth]);
