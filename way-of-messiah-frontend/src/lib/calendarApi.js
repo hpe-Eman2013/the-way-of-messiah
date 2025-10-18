@@ -17,7 +17,7 @@ export async function fetchEventsForMonth(year, monthZeroIndexed) {
   if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
   const json = await r.json();
 
-  // ← normalize to an array (backend sometimes wraps in {events} or {items})
+  // ← normalize: tolerate {events:[…]} or {items:[…]} or […]
   return Array.isArray(json)
     ? json
     : Array.isArray(json?.events)

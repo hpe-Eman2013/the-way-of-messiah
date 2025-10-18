@@ -3,26 +3,30 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 
-/** Normalize one raw event from the API/DB into a shape the calendar expects */
+/** Normalize one raw event into a consistent shape */
 export const normalizeEvent = (e) => {
-  // Accept several possible date fields; convert to YYYY-MM-DD (UTC)
   const iso = e?.dateYmd || e?.date || e?.when || e?.startDate;
   const ymd = iso ? dayjs.utc(iso).format("YYYY-MM-DD") : null;
 
-  // Normalize description → array of strings for easy scanning
   const descArr = Array.isArray(e?.description)
     ? e.description
     : e?.description
     ? [String(e.description)]
     : [];
 
+  const searchText = [e?.title, e?.name, e?.category, ...(descArr || [])]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
   return {
-    id: e?._id || e?.id,
+    id: e?._id || e?.id || `${ymd}:${(e?.title ?? e?.name ?? "").trim()}`,
     title: String(e?.title ?? e?.name ?? "").trim(),
     name: e?.name,
     category: e?.category,
-    description: descArr, // always an array now
-    dateYmd: ymd,
+    description: descArr, // always an array
+    dateYmd: ymd, // YYYY-MM-DD (UTC)
+    searchText, // lowercase for fast contains()
     raw: e,
   };
 };
@@ -39,29 +43,24 @@ export const groupByDay = (events) =>
 /** Preferred display title */
 export const getTitle = (e) => String(e?.title ?? e?.name ?? "").trim();
 
-/** Extract the Enoch day number from a title like "Day 59" */
+/** Extract “Day N” from a title like "Day 59" */
 export const parseDayNumber = (e) => {
   const t = getTitle(e).toLowerCase();
   const m = t.match(/\bday\s*(\d{1,3})\b/);
   return m ? Number(m[1]) : null;
 };
 
-/** Build lowercase text to search for Sabbath/Feast keywords */
-const buildSearchText = (e) => {
-  const parts = [];
-  if (Array.isArray(e?.description)) parts.push(e.description.join(" "));
-  else if (e?.description) parts.push(String(e.description));
-  parts.push(e?.title, e?.name, e?.category);
-  return parts.filter(Boolean).join(" ").toLowerCase();
-};
+/** Back-compat: some files still import this */
+export const keyFromEvent = (e) => e?.dateYmd ?? null;
 
-export const isSabbath = (e) => buildSearchText(e).includes("sabbath");
+/** Sabbath / Feast detectors */
+export const isSabbath = (e) => e?.searchText?.includes("sabbath");
 
-const FEAST_KEYWORDS = [
+const FEAST_KEYS = [
   "passover",
   "unleavened",
   "firstfruits",
-  "weeks", // Shavuot
+  "weeks",
   "pentecost",
   "trumpets",
   "atonement",
@@ -71,69 +70,57 @@ const FEAST_KEYWORDS = [
   "hanukkah",
 ];
 
-export const isFeast = (e) => {
-  const t = buildSearchText(e);
-  return FEAST_KEYWORDS.some((k) => t.includes(k));
-};
+export const isFeast = (e) =>
+  FEAST_KEYS.some((k) => e?.searchText?.includes(k));
 
-/** Get a compact label string for a day's feasts (e.g., "Passover, Unleavened Bread") */
+/** Labels for a day (e.g., ["Sabbath","Passover"]) */
 export const extractFeastLabels = (eventsForDay) => {
   const labels = new Set();
   (eventsForDay || []).forEach((e) => {
     if (isSabbath(e)) labels.add("Sabbath");
-    // prefer explicit description labels if present
-    if (Array.isArray(e.description)) {
+    if (Array.isArray(e.description) && e.description.length) {
       e.description.forEach((d) => {
         const s = String(d).trim();
         if (s) labels.add(s);
       });
     } else if (isFeast(e)) {
-      // fallback: infer from text
-      const text = buildSearchText(e);
-      FEAST_KEYWORDS.forEach((k) => {
-        if (text.includes(k)) labels.add(k[0].toUpperCase() + k.slice(1));
+      FEAST_KEYS.forEach((k) => {
+        if (e.searchText.includes(k))
+          labels.add(k[0].toUpperCase() + k.slice(1));
       });
     }
   });
   return Array.from(labels);
 };
 
-/** Explanation list builder used by the bottom panel */
+/** Build bottom explanation list for the visible month */
 export const computeExplanationItems = (byDay, selectedMonth) => {
   const items = [];
-  const year = selectedMonth.year();
-  const month = selectedMonth.month() + 1;
-  const daysInMonth = selectedMonth.daysInMonth();
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ymd = dayjs
-      .utc({ year, month: month - 1, date: d })
-      .format("YYYY-MM-DD");
+  const first = selectedMonth.utc().startOf("month");
+  const days = first.daysInMonth();
+  for (let d = 1; d <= days; d++) {
+    const ymd = first.date(d).format("YYYY-MM-DD");
     const events = byDay[ymd] || [];
-    if (!events.length) continue;
-
     const labels = extractFeastLabels(events);
     if (labels.length) {
-      items.push({
-        ymd,
-        humanDate: dayjs.utc(ymd).format("MMM D"),
-        labels,
-      });
+      items.push({ ymd, humanDate: first.date(d).format("MMM D"), labels });
     }
   }
   return items;
 };
 
-/** Basic cell ring class logic (you may already have this) */
+/** Compose cell class with fixed height so the grid doesn’t collapse */
 export const composeCellClass = ({
   isCurrentMonth,
   hasSabbathEvent,
   hasFeastEvent,
 }) => {
-  const rings = hasSabbathEvent
-    ? "ring-2 ring-orange-400"
+  const base = "border p-2 min-h-[110px] flex flex-col";
+  const tint = hasSabbathEvent
+    ? " ring-2 ring-orange-400 ring-offset-1 ring-offset-gray-200 bg-orange-50"
     : hasFeastEvent
-    ? "ring-2 ring-red-500"
+    ? " ring-2 ring-red-500 ring-offset-1 ring-offset-gray-200 bg-red-50"
     : "";
-  return `${isCurrentMonth ? "bg-white" : "bg-gray-100"} ${rings}`;
+  const shade = isCurrentMonth ? " bg-white" : " bg-gray-100 opacity-60";
+  return base + tint + shade;
 };

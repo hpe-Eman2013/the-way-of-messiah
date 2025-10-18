@@ -49,6 +49,8 @@ export default function CalendarView() {
   const [yearAnchor, setYearAnchor] = useState(null); // dayjs or null
 
   const byDay = useMemo(() => groupByDay(events), [events]);
+
+
   useEffect(() => {
     const k = "2025-04-03";
     console.log(`byDay[${k}]:`, byDay[k]);
@@ -211,112 +213,64 @@ export default function CalendarView() {
   /* -------- Grid render (42 cells) -------- */
   const renderCells = () => {
     const cells = [];
-    const startOfMonthUtc = selectedMonth.utc().startOf("month");
-    const firstGridDayUtc = startOfMonthUtc.startOf("week"); // Sunday-start in UTC
+    const firstOfMonth = selectedMonth.utc().startOf("month");
+    // Sunday-start grid anchor
+    const gridStart =
+      firstOfMonth.day() === 0
+        ? firstOfMonth
+        : firstOfMonth.subtract(firstOfMonth.day(), "day"); // move back to Sunday
 
     for (let i = 0; i < 42; i++) {
-      const currentDateUTC = firstGridDayUtc.add(i, "day");
-      const currentDateLabel = currentDateUTC; // use .local() if you prefer local labels
-      const isCurrentMonth = currentDateUTC.month() === selectedMonth.month();
+      const d = gridStart.add(i, "day");
+      const isCurrentMonth = d.month() === selectedMonth.month();
+      const ymd = d.format("YYYY-MM-DD");
+      const todayEvents = isCurrentMonth ? byDay[ymd] || [] : [];
 
-      const ymdKey = dayjs.utc(currentDateUTC).format("YYYY-MM-DD");
-      const todayEvents = isCurrentMonth ? byDay[ymdKey] ?? [] : [];
-      const enochDay = calculateEnochDay(currentDateUTC);
-
-      // Coloring by event titles (you can refine these)
-      // Option A — trust DB: look in description/title/name/category
       const hasSabbathEvent = todayEvents.some(isSabbath);
       const hasFeastEvent = todayEvents.some(isFeast);
 
-      // More visible tint (ring offset so it shows in the gray gaps)
-      const base =
-        "calendar-cell border p-2 min-h-[90px] flex flex-col bg-white";
-      const sabbathCls = hasSabbathEvent
-        ? " ring-2 ring-purple-500 ring-offset-1 ring-offset-gray-300 bg-purple-50"
-        : "";
-      const feastCls = hasFeastEvent
-        ? " ring-2 ring-emerald-600 ring-offset-1 ring-offset-gray-300 bg-emerald-50"
-        : "";
-      const outsideCls = !isCurrentMonth ? " opacity-40" : "";
       const cellClass = composeCellClass({
-        hasSabbath: hasSabbathEvent,
-        hasFeast: hasFeastEvent,
         isCurrentMonth,
+        hasSabbathEvent,
+        hasFeastEvent,
       });
-      // DEBUG LOGS
-      console.log("Date:", currentDateUTC.format("YYYY-MM-DD"), todayEvents);
-      console.log(
-        "Sabbath?",
-        todayEvents.some(isSabbath),
-        "Feast?",
-        todayEvents.some(isFeast),
-        "Feast labels:",
-        todayEvents.flatMap(extractFeastLabels)
-      );
-      if (currentDateUTC.format("YYYY-MM-DD") === "2025-04-03") {
-        console.log("Events on 2025-04-03:", todayEvents);
-      }
-      console.log("byDay[2025-04-03]:", byDay["2025-04-03"]);
-      console.log("All keys in byDay:", Object.keys(byDay));
-      console.log("Raw events:", events);
-      // Badges
-      const sabbathBadge = hasSabbathEvent ? (
-        <span className="inline-block text-[10px] px-1 py-0.5 rounded bg-purple-600 text-white">
-          Sabbath
-        </span>
-      ) : null;
 
-      const feastBadges = todayEvents.flatMap((e, idx) =>
-        extractFeastLabels(e).map((label, i) => (
-          <span
-            key={`${e.id ?? e._id ?? idx}-${label}-${i}`}
-            className="inline-block text-[10px] px-1 py-0.5 rounded bg-emerald-600 text-white"
-          >
-            {label}
-          </span>
-        ))
-      );
-      // Only hide raw “Day N” titles if we actually show the computed label
-      const displayEvents = enochDay
-        ? todayEvents.filter((e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e)))
-        : todayEvents;
+      const labels = extractFeastLabels(todayEvents);
+      const key = ymd;
 
-      const key = currentDateUTC.format("YYYY-MM-DD");
       cells.push(
         <div key={key} className={cellClass}>
-          {/* Date label */}
-          <div className="text-xs font-semibold">
-            {currentDateLabel.format("MMM D")}
-          </div>
+          <div className="text-xs font-semibold">{d.format("MMM D")}</div>
 
-          {/* Computed Enoch Day label */}
-          {enochDay ? (
-            <div className="text-xs mt-1 font-semibold">Day {enochDay}</div>
+          {labels.length ? (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {labels.map((l) => (
+                <span
+                  key={l}
+                  className="text-[10px] px-1 py-0.5 rounded bg-gray-800 text-white"
+                >
+                  {l}
+                </span>
+              ))}
+            </div>
           ) : null}
 
-          {/* badges row */}
-          <div className="flex flex-wrap gap-1 mt-1">
-            {sabbathBadge}
-            {feastBadges}
-          </div>
-
-          {/* Non-Day events */}
-          {displayEvents.map((event, idx) => {
-            const label =
-              Array.isArray(event.description) && event.description.length
-                ? event.description.join(", ")
-                : getTitle(event);
-            return (
-              <div key={event.id ?? event._id ?? idx} className="text-xs mt-1">
-                <strong>{label}</strong>
+          {/* Show any non-Day labels (e.g., custom notes) */}
+          {(todayEvents || [])
+            .filter((e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e)))
+            .map((e, idx) => (
+              <div key={e.id || idx} className="text-[11px] mt-1 truncate">
+                {Array.isArray(e.description) && e.description.length
+                  ? e.description.join(", ")
+                  : getTitle(e)}
               </div>
-            );
-          })}
+            ))}
         </div>
       );
     }
     return cells;
   };
+
 
   return (
     <div className="p-4 space-y-4">
