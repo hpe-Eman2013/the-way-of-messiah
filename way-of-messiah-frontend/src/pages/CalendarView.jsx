@@ -51,8 +51,15 @@ export default function CalendarView() {
 
   const byDay = useMemo(() => groupByDay(events), [events]);
   useEffect(() => {
-    console.log("byDay keys sample:", Object.keys(byDay).slice(0, 10));
-    console.log('byDay["2025-04-03"]:', byDay["2025-04-03"]);
+    const k = "2025-04-03";
+    console.log(`byDay[${k}]:`, byDay[k]);
+    console.table(
+      (byDay[k] || []).map((e) => ({
+        title: e.title,
+        desc: e.description?.join?.(", "),
+        dateYmd: e.dateYmd,
+      }))
+    );
   }, [byDay]);
 
   useEffect(() => {
@@ -90,32 +97,11 @@ export default function CalendarView() {
           selectedMonth.year(),
           selectedMonth.month()
         );
-
-        // raw is guaranteed an array now, but keep it defensive
-        const arr = Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw?.items)
-          ? raw.items
-          : Array.isArray(raw?.events)
-          ? raw.events
-          : [];
-
-        const safe = arr.map(normalizeEvent);
+        const safe = (Array.isArray(raw) ? raw : []).map(normalizeEvent);
         if (!cancel) setEvents(safe);
       } catch (e) {
         console.error("Error fetching events:", e);
         if (!cancel) setEvents([]);
-      }
-
-      // Equinox is optional; treat 404 as no data
-      try {
-        const res = await axios.get(
-          `${CAL_BASE}/equinox?year=${selectedMonth.year()}`
-        );
-        const ymd = res?.data?.equinoxYmd ?? res?.data?.springEquinox ?? null;
-        if (!cancel) setSpringEquinox(ymd);
-      } catch (err) {
-        if (!cancel) setSpringEquinox(null);
       }
     })();
     return () => {
@@ -183,25 +169,22 @@ export default function CalendarView() {
   const enochAnchor = useMemo(() => {
     const list = Array.isArray(events) ? events : [];
 
-    // Prefer an explicit "Day 1" event with a valid date
-    const d1 = list.find((e) => parseDayNumber(getTitle(e)) === 1 && e.dateYmd);
+    const d1 = list.find((e) => parseDayNumber(e) === 1 && e.dateYmd);
     if (d1) return dayjs.utc(d1.dateYmd);
 
-    // Else derive from any "Day N" (earliest by date)
-    const anyDay = list
+    const any = list
       .map((e) => {
-        const num = parseDayNumber(getTitle(e));
-        const ymd = e.dateYmd;
-        return num && ymd ? { num, ymd } : null;
+        const n = parseDayNumber(e);
+        return n && e.dateYmd ? { n, ymd: e.dateYmd } : null;
       })
       .filter(Boolean)
       .sort((a, b) => a.ymd.localeCompare(b.ymd))[0];
 
-    if (anyDay) return dayjs.utc(anyDay.ymd).subtract(anyDay.num - 1, "day");
+    if (any) return dayjs.utc(any.ymd).subtract(any.n - 1, "day");
 
-    // Fallback: equinox + 1 day (if available)
-    return springEquinox ? dayjs.utc(springEquinox).add(1, "day") : null;
-  }, [events, springEquinox]);
+    // if you track springEquinox in this component, keep your previous fallback here
+    return null;
+  }, [events /*, springEquinox*/]);
 
   // Explanation Panel
   // Build explanation lines for the visible month from events
