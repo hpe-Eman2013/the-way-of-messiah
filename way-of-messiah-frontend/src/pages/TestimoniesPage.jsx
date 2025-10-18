@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import "../assets/css/TestimoniesPage.css";
 import Header from "../components/Header";
-import API_BASE from "../lib/api";
+import { API_BASE } from "../lib/api";
 
 const TestimoniesPage = () => {
   const [testimonies, setTestimonies] = useState([]);
