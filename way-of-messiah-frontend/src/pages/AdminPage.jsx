@@ -3,7 +3,7 @@ import axios from "axios";
 import Header from "../components/Header";
 import { CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { BASE_URL } from "../lib/api";
+import { API_URL } from "../lib/api";
 
 export default function AdminPage() {
   const [testimonies, setTestimonies] = useState([]);
@@ -17,7 +17,7 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchTestimonies = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/admin/testimonies`, {
+        const res = await axios.get(`${API_URL}/admin/testimonies`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setTestimonies(Array.isArray(res.data) ? res.data : []);
@@ -49,7 +49,7 @@ export default function AdminPage() {
       return alert("Select at least one testimony.");
     try {
       await axios.post(
-        `${BASE_URL}/admin/bulk-action`,
+        `${API_URL}/admin/bulk-action`,
         { action, ids: selectedIds },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -74,9 +74,7 @@ export default function AdminPage() {
     }
   };
   const buildImageUrl = (url) => {
-    return url.startsWith("http")
-      ? url
-      : `${BASE_URL.replace(/\/$/, "")}${url}`;
+    return url.startsWith("http") ? url : `${API_URL.replace(/\/$/, "")}${url}`;
   };
 
   return (
