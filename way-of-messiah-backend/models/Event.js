@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const EventSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
-    description: { type: String, default: "" },
+    description: { type: mongoose.Schema.Types.Mixed }, // string or [string]
 
     category: {
       type: String,
@@ -15,6 +15,7 @@ const EventSchema = new mongoose.Schema(
     // Store as UTC Dates
     startDate: { type: Date, required: true },
     endDate: { type: Date },
+    date: Date,
 
     // Display-only fields
     time: { type: String, default: "" }, // e.g., "6:30 PM – 8:00 PM"

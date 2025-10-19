@@ -1,241 +1,71 @@
-// backend/routes/calendarRoutes.js
-
+// routes/calendarRoutes.js
 const express = require("express");
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+dayjs.extend(utc);
+
+const Event = require("../models/Event"); // <- your model
+
 const router = express.Router();
-const path = require("path");
-const fs = require("fs/promises");
-// ⬇️ UPDATED: pull from services now
-const {
-  getEventsFromDB,
-  syncEnochFeastsToMongo,
-} = require("../services/calendarService");
-// ⬇️ Add your Mongoose model
-const Event = require("../models/Event");
-const generateCalendarZIP = require("../utils/generateCalendarZIP");
-// Index route so GET /api/calendar returns a friendly JSON instead of 404
-router.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    service: "calendar",
-    routes: {
-      ping: "GET /api/calendar/ping",
-      events: "GET /api/calendar/events?from=YYYY-MM-DD&to=YYYY-MM-DD",
-      equinox: "GET /api/calendar/equinox?year=YYYY",
-      explanations: "GET /api/calendar/explanations?year=YYYY&month=1-12"
-    }
-  });
-});
 
-// GET /api/equinox?year=2025
-// Returns the Spring Equinox as YYYY-MM-DD (derived as the day before Day 1).
-router.get("/equinox", async (req, res) => {
-  try {
-    const year = parseInt(req.query.year, 10);
-    if (!year) return res.status(400).json({ error: "year is required" });
-
-    // derive Day 1 in Mar/Apr window, then equinox = day1 - 1 day
-    const from = new Date(Date.UTC(year, 2, 1)); // Mar 1
-    const to = new Date(Date.UTC(year, 3, 10)); // Apr 10
-    const day1 = await Event.findOne({
-      isPublished: true,
-      title: "Day 1",
-      date: { $gte: from, $lt: to },
-    })
-      .sort({ date: 1 })
-      .lean();
-
-    let day1Date = day1?.date;
-    if (!day1Date) {
-      const first = await Event.findOne({
-        isPublished: true,
-        date: { $gte: from, $lt: to },
-      })
-        .sort({ date: 1 })
-        .lean();
-      day1Date = first?.date;
-    }
-    if (!day1Date)
-      return res.status(404).json({ error: "Day 1 not found for year" });
-
-    const equinox = new Date(
-      new Date(day1Date).getTime() - 24 * 60 * 60 * 1000
-    );
-    return res.json({ year, equinoxYmd: equinox.toISOString().slice(0, 10) });
-  } catch (err) {
-    console.error("GET /equinox failed:", err);
-    return res.status(500).json({ error: "Failed to compute equinox" });
-  }
-});
-// GET /api/explanations?year=2025&month=10
-router.get("/explanations", async (req, res) => {
-  try {
-    const year = parseInt(req.query.year, 10);
-    const month = parseInt(req.query.month, 10);
-    if (!year || !month)
-      return res.status(400).json({ error: "year and month are required" });
-    // stub payload — fill in later
-    return res.json({ year, month, items: [] });
-  } catch (err) {
-    console.error("GET /explanations failed:", err);
-    return res.status(500).json({ error: "Failed to load explanations" });
-  }
-});
-
-router.get("/download", async (req, res) => {
-  try {
-    const { events, enochStart, enochEnd } = await getEventsFromDB();
-    const { filename: zipFilename, buffer: zipBuffer } =
-      await generateCalendarZIP(events, enochStart);
-
-    const tmpPath = path.join(__dirname, "..", "tmp", zipFilename);
-    // Ensure the tmp folder exists
-    await fs.mkdir(path.dirname(tmpPath), { recursive: true });
-
-    await fs.writeFile(tmpPath, zipBuffer);
-    // Dynamic filename
-    const formatDate = (date) => {
-      const d = new Date(date); // ← this line ensures it's a Date object
-      const month = d.toLocaleString("en-US", { month: "short" });
-      const year = d.getFullYear();
-      return `${month}${year}`;
-    };
-    const filenameLabel = `Consecrated_Calendar_${formatDate(
-      enochStart
-    )}_to_${formatDate(enochEnd)}.zip`;
-    res.download(tmpPath, filenameLabel, (err) => {
-      if (err) {
-        console.error("Download error:", err);
-        res.status(500).send("Failed to download calendar ZIP.");
-      } else {
-        fs.unlink(tmpPath); // clean up after download
-      }
-    });
-  } catch (err) {
-    console.error("Failed to generate calendar ZIP:", err);
-    res.status(500).send("Failed to generate calendar ZIP");
-  }
-});
-// Get all events
+/**
+ * GET /api/calendar/events?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * Returns events where from <= startDate (UTC) < to
+ */
 router.get("/events", async (req, res) => {
   try {
-    const fromStr = req.query.from; // "YYYY-MM-DD"
-    const toStr = req.query.to; // "YYYY-MM-DD"
-
-    const match = {};
-    if (fromStr) {
-      match.date = {
-        ...(match.date || {}),
-        $gte: new Date(fromStr + "T00:00:00Z"),
-      };
-    }
-    if (toStr) {
-      const toEnd = new Date(toStr + "T00:00:00Z");
-      toEnd.setUTCDate(toEnd.getUTCDate() + 1); // end-exclusive
-      match.date = { ...(match.date || {}), $lt: toEnd };
-    }
-
-    // 🧹 Simpler, version-safe pipeline (no $type, no $toString)
-    const docs = await Event.aggregate([
-      { $match: match },
-      { $addFields: { canonicalDate: { $ifNull: ["$date", "$startDate"] } } },
-      { $sort: { canonicalDate: 1, title: 1, _id: 1 } },
-      {
-        $project: {
-          title: 1,
-          category: 1,
-          description: 1, // pass through; normalize in Node
-          location: { $ifNull: ["$location", ""] },
-          link: { $ifNull: ["$link", ""] },
-          time: { $ifNull: ["$time", ""] },
-
-          // format from canonicalDate if present
-          dateISO: {
-            $cond: [
-              { $ne: ["$canonicalDate", null] },
-              {
-                $dateToString: {
-                  date: "$canonicalDate",
-                  format: "%Y-%m-%dT%H:%M:%S.%LZ",
-                  timezone: "UTC",
-                },
-              },
-              null,
-            ],
-          },
-          dateYmd: {
-            $cond: [
-              { $ne: ["$canonicalDate", null] },
-              {
-                $dateToString: {
-                  date: "$canonicalDate",
-                  format: "%Y-%m-%d",
-                  timezone: "UTC",
-                },
-              },
-              null,
-            ],
-          },
-        },
-      },
-    ]);
-
-    // 🧰 Normalize in Node (safe on all Mongo versions)
-    const out = docs.map((e) => ({
-      id: e._id ? String(e._id) : e.id ?? undefined,
-      title: e.title ?? "",
-      category: e.category ?? "",
-
-      description: Array.isArray(e.description)
-        ? e.description.map((x) => String(x))
-        : e.description
-        ? [String(e.description)]
-        : [],
-
-      location: e.location ?? "",
-      link: e.link ?? "",
-      time: e.time ?? "",
-
-      dateISO: e.dateISO ?? null,
-      dateYmd: e.dateYmd ?? null,
-      // keep raw timed fields available if you need them later
-      startDateISO: e.startDateISO ?? undefined,
-      endDateISO: e.endDateISO ?? undefined,
-    }));
-
-    return res.json(out);
-  } catch (err) {
-    console.error("GET /api/calendar/events failed:", err);
-    return res.status(500).json({ error: "Failed to load events" });
-  }
-});
-
-
-// POST /api/calendar/enoch/:year/feasts
-router.post("/enoch/:year/feasts", async (req, res, next) => {
-  try {
-    const year = Number(req.params.year);
-    const {
-      equinoxISO,
-      overwrite = true,
-      sukkotAllDays = false,
-    } = req.body || {};
-
-    if (!equinoxISO) {
+    const { from, to } = req.query;
+    if (!from || !to) {
       return res
         .status(400)
-        .json({ error: "equinoxISO (ISO date string) is required" });
+        .json({ error: "from and to are required (YYYY-MM-DD)" });
     }
 
-    const result = await syncEnochFeastsToMongo({
-      equinoxDate: new Date(equinoxISO), // e.g., "2025-03-20T00:00:00.000Z"
-      EventModel: Event,
-      overwrite,
-      sukkotAllDays,
+    // Parse as strict UTC YMD
+    const fromUtc = dayjs.utc(from, "YYYY-MM-DD", true);
+    const toUtc = dayjs.utc(to, "YYYY-MM-DD", true);
+    if (!fromUtc.isValid() || !toUtc.isValid()) {
+      return res
+        .status(400)
+        .json({ error: "Invalid from/to format. Use YYYY-MM-DD." });
+    }
+
+    // Query by startDate (your schema’s main field), optional isPublished
+    const query = {
+      isPublished: { $ne: false },
+      startDate: { $gte: fromUtc.toDate(), $lt: toUtc.toDate() }, // inclusive/exclusive
+    };
+
+    const docs = await Event.find(query).sort({ startDate: 1 }).lean();
+
+    // Normalize for the frontend
+    const events = docs.map((d) => {
+      const dateObj = d.startDate || d.date; // prefer startDate, fall back to date if present
+      const dateYmd = dateObj ? dayjs.utc(dateObj).format("YYYY-MM-DD") : null;
+
+      // Ensure description is an array of strings
+      let description = [];
+      if (Array.isArray(d.description)) {
+        description = d.description.map(String);
+      } else if (d.description != null) {
+        description = [String(d.description)];
+      }
+
+      return {
+        _id: d._id?.toString?.() ?? d._id,
+        title: d.title ?? "",
+        description,
+        category: d.category ?? "Other",
+        dateYmd, // <-- what the frontend groups on
+        date: dateObj ?? null, // optional, for reference
+        isPublished: d.isPublished !== false,
+      };
     });
 
-    res.json({ year, ...result });
+    res.json(events); // array (frontend also tolerates {events:[…]}, but array is simplest)
   } catch (err) {
-    next(err);
+    console.error("GET /api/calendar/events failed:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
