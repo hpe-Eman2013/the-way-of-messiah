@@ -180,6 +180,13 @@ export default function CalendarView() {
           {selectedMonth.format("YYYY-MM")}
         </div>
       </div>
+      {/* TEMP DEBUG */}
+      <div className="text-xs text-gray-600 mb-2">
+        events loaded: {Array.isArray(events) ? events.length : 0} • keys:{" "}
+        {Object.keys(byDay || {})
+          .slice(0, 5)
+          .join(", ") || "none"}
+      </div>
 
       {/* Weekday header */}
       <div className="grid grid-cols-7 text-xs font-semibold text-center mb-1">

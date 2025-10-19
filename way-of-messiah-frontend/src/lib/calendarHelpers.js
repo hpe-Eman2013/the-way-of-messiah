@@ -1,7 +1,18 @@
 // src/lib/calendarHelpers.js
+// Centralized helpers for the Enoch calendar views
+
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
+
+/** Build lowercase text to search for Sabbath/Feast keywords */
+export const buildSearchText = (e) => {
+  const parts = [];
+  if (Array.isArray(e?.description)) parts.push(e.description.join(" "));
+  else if (e?.description) parts.push(String(e.description));
+  parts.push(e?.title, e?.name, e?.category);
+  return parts.filter(Boolean).join(" ").toLowerCase();
+};
 
 /** Normalize one raw event into a consistent shape */
 export const normalizeEvent = (e) => {
@@ -50,8 +61,9 @@ export const parseDayNumber = (e) => {
   return m ? Number(m[1]) : null;
 };
 
-/** Back-compat (safe) */
-export const keyFromEvent = (e) => e?.dateYmd ?? null;
+/** Back-compat: stable key */
+export const keyFromEvent = (e) =>
+  (e?.id ?? e?._id ?? `${e?.dateYmd ?? ""}:${getTitle(e)}`).toString();
 
 /** Sabbath / Feast detectors */
 export const isSabbath = (e) => e?.searchText?.includes("sabbath");
@@ -93,7 +105,7 @@ export const extractFeastLabels = (eventsForDay) => {
   return Array.from(labels);
 };
 
-/** Explanation list for the visible month */
+/** Build the bottom explanation list for the visible month */
 export const computeExplanationItems = (byDay, selectedMonth) => {
   const first = selectedMonth.utc().startOf("month");
   const days = first.daysInMonth();
