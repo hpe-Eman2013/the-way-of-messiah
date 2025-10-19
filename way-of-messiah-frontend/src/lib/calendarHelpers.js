@@ -1,9 +1,11 @@
+// src/lib/calendarHelpers.js
 // Centralized helpers for the Enoch calendar views
+
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 
-/** Normalize one raw event into a consistent shape */
+/** Normalize one raw event into a consistent shape the calendar expects */
 export const normalizeEvent = (e) => {
   const iso = e?.dateYmd || e?.date || e?.when || e?.startDate;
   const ymd = iso ? dayjs.utc(iso).format("YYYY-MM-DD") : null;
@@ -24,9 +26,9 @@ export const normalizeEvent = (e) => {
     title: String(e?.title ?? e?.name ?? "").trim(),
     name: e?.name,
     category: e?.category,
-    description: descArr, // always an array
-    dateYmd: ymd, // YYYY-MM-DD (UTC)
-    searchText, // lowercase for fast contains()
+    description: descArr,
+    dateYmd: ymd,
+    searchText,
     raw: e,
   };
 };
@@ -43,14 +45,14 @@ export const groupByDay = (events) =>
 /** Preferred display title */
 export const getTitle = (e) => String(e?.title ?? e?.name ?? "").trim();
 
-/** Extract “Day N” from a title like "Day 59" */
+/** Extract the Enoch day number from a title like "Day 59" */
 export const parseDayNumber = (e) => {
   const t = getTitle(e).toLowerCase();
   const m = t.match(/\bday\s*(\d{1,3})\b/);
   return m ? Number(m[1]) : null;
 };
 
-/** Back-compat: some files still import this */
+/** Back-compat */
 export const keyFromEvent = (e) => e?.dateYmd ?? null;
 
 /** Sabbath / Feast detectors */
@@ -73,7 +75,7 @@ const FEAST_KEYS = [
 export const isFeast = (e) =>
   FEAST_KEYS.some((k) => e?.searchText?.includes(k));
 
-/** Labels for a day (e.g., ["Sabbath","Passover"]) */
+/** Labels for a day */
 export const extractFeastLabels = (eventsForDay) => {
   const labels = new Set();
   (eventsForDay || []).forEach((e) => {
@@ -93,15 +95,14 @@ export const extractFeastLabels = (eventsForDay) => {
   return Array.from(labels);
 };
 
-/** Build bottom explanation list for the visible month */
+/** Explanation list for visible month */
 export const computeExplanationItems = (byDay, selectedMonth) => {
-  const items = [];
   const first = selectedMonth.utc().startOf("month");
   const days = first.daysInMonth();
+  const items = [];
   for (let d = 1; d <= days; d++) {
     const ymd = first.date(d).format("YYYY-MM-DD");
-    const events = byDay[ymd] || [];
-    const labels = extractFeastLabels(events);
+    const labels = extractFeastLabels(byDay[ymd] || []);
     if (labels.length) {
       items.push({ ymd, humanDate: first.date(d).format("MMM D"), labels });
     }
@@ -109,7 +110,7 @@ export const computeExplanationItems = (byDay, selectedMonth) => {
   return items;
 };
 
-/** Compose cell class with fixed height so the grid doesn’t collapse */
+/** Compose cell class with fixed height */
 export const composeCellClass = ({
   isCurrentMonth,
   hasSabbathEvent,

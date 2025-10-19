@@ -11,13 +11,13 @@ export async function fetchEventsForMonth(year, monthZeroIndexed) {
     .utc({ year, month: monthZeroIndexed, date: 1 })
     .add(1, "month")
     .format("YYYY-MM-01");
-  const url = `${CAL_BASE}/events?from=${from}&to=${to}`;
 
+  const url = `${CAL_BASE}/events?from=${from}&to=${to}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
   const json = await r.json();
 
-  // ← normalize: tolerate {events:[…]} or {items:[…]} or […]
+  // normalize to array for [{...}], {events:[...]}, or {items:[...]}
   return Array.isArray(json)
     ? json
     : Array.isArray(json?.events)
