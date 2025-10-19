@@ -20,6 +20,7 @@ export default function CalendarView() {
   const [events, setEvents] = useState([]);
 
   // Fetch month events
+  // ⬇️ REPLACE your current month fetch useEffect with this one
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -29,7 +30,30 @@ export default function CalendarView() {
           selectedMonth.month()
         );
         const safe = (Array.isArray(raw) ? raw : []).map(normalizeEvent);
-        if (!cancel) setEvents(safe);
+
+        // If API delivered events, use them.
+        if (!cancel && safe.length > 0) {
+          setEvents(safe);
+          return;
+        }
+
+        // ---- TEMP: self-test injection if month is empty ----
+        // Inject 1 event on 2025-04-03 with two labels.
+        // If labels/colors/explanations suddenly appear, your frontend is good.
+        if (!cancel) {
+          setEvents([
+            ...safe,
+            normalizeEvent({
+              _id: "selftest-2025-04-03",
+              title: "Day 14",
+              description: ["Sabbath", "Passover"],
+              dateYmd: "2025-04-03",
+              category: "Other",
+              isPublished: true,
+            }),
+          ]);
+        }
+        // ----------------------------------------------------
       } catch (e) {
         console.error("month fetch failed", e);
         if (!cancel) setEvents([]);
@@ -124,6 +148,26 @@ export default function CalendarView() {
         </button>
         <div className="ml-4 font-semibold">
           {selectedMonth.format("YYYY-MM")}
+        </div>
+      </div>
+      {/* DEBUG (remove later) */}
+      <div className="text-xs text-gray-600 mb-2 border rounded px-2 py-1 bg-gray-50">
+        <div>
+          month: <b>{selectedMonth.format("YYYY-MM")}</b>
+          {" • "}events: <b>{Array.isArray(events) ? events.length : 0}</b>
+          {" • "}days in map: <b>{Object.keys(byDay || {}).length}</b>
+        </div>
+        <div>
+          sample keys:{" "}
+          {Object.keys(byDay || {})
+            .slice(0, 6)
+            .join(", ") || "none"}
+        </div>
+        <div>
+          byDay[2025-04-03]:{" "}
+          {byDay?.["2025-04-03"]?.length
+            ? `${byDay["2025-04-03"].length} event(s)`
+            : "none"}
         </div>
       </div>
 
