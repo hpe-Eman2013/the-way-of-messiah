@@ -1,23 +1,27 @@
+// src/lib/calendarApi.js
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { CAL_BASE } from "./api.js";
 dayjs.extend(utc);
 
+const toFirst = (year, month0) =>
+  dayjs.utc({ year, month: month0, date: 1 }).format("YYYY-MM-01");
+
 export async function fetchEventsForMonth(year, monthZeroIndexed) {
-  const from = dayjs
-    .utc({ year, month: monthZeroIndexed, date: 1 })
-    .format("YYYY-MM-01");
-  const to = dayjs
-    .utc({ year, month: monthZeroIndexed, date: 1 })
-    .add(1, "month")
-    .format("YYYY-MM-01");
+  const from = toFirst(year, monthZeroIndexed);
+  const to = toFirst(year, monthZeroIndexed) // first of this month
+    ? dayjs
+        .utc({ year, month: monthZeroIndexed, date: 1 })
+        .add(1, "month")
+        .format("YYYY-MM-01")
+    : null;
 
   const url = `${CAL_BASE}/events?from=${from}&to=${to}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
   const json = await r.json();
 
-  // normalize to array for [{...}], {events:[...]}, or {items:[...]}
+  // Normalize: tolerate [{...}], {events:[...]}, or {items:[...]}
   return Array.isArray(json)
     ? json
     : Array.isArray(json?.events)

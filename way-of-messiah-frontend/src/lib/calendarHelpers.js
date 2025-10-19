@@ -1,11 +1,9 @@
 // src/lib/calendarHelpers.js
-// Centralized helpers for the Enoch calendar views
-
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 
-/** Normalize one raw event into a consistent shape the calendar expects */
+/** Normalize one raw event into a consistent shape */
 export const normalizeEvent = (e) => {
   const iso = e?.dateYmd || e?.date || e?.when || e?.startDate;
   const ymd = iso ? dayjs.utc(iso).format("YYYY-MM-DD") : null;
@@ -26,9 +24,9 @@ export const normalizeEvent = (e) => {
     title: String(e?.title ?? e?.name ?? "").trim(),
     name: e?.name,
     category: e?.category,
-    description: descArr,
-    dateYmd: ymd,
-    searchText,
+    description: descArr, // always an array
+    dateYmd: ymd, // YYYY-MM-DD (UTC)
+    searchText, // for fast contains()
     raw: e,
   };
 };
@@ -45,14 +43,14 @@ export const groupByDay = (events) =>
 /** Preferred display title */
 export const getTitle = (e) => String(e?.title ?? e?.name ?? "").trim();
 
-/** Extract the Enoch day number from a title like "Day 59" */
+/** Extract “Day N” from a title like "Day 59" */
 export const parseDayNumber = (e) => {
   const t = getTitle(e).toLowerCase();
   const m = t.match(/\bday\s*(\d{1,3})\b/);
   return m ? Number(m[1]) : null;
 };
 
-/** Back-compat */
+/** Back-compat (safe) */
 export const keyFromEvent = (e) => e?.dateYmd ?? null;
 
 /** Sabbath / Feast detectors */
@@ -75,7 +73,7 @@ const FEAST_KEYS = [
 export const isFeast = (e) =>
   FEAST_KEYS.some((k) => e?.searchText?.includes(k));
 
-/** Labels for a day */
+/** Labels for a day (e.g., ["Sabbath","Passover"]) */
 export const extractFeastLabels = (eventsForDay) => {
   const labels = new Set();
   (eventsForDay || []).forEach((e) => {
@@ -95,7 +93,7 @@ export const extractFeastLabels = (eventsForDay) => {
   return Array.from(labels);
 };
 
-/** Explanation list for visible month */
+/** Explanation list for the visible month */
 export const computeExplanationItems = (byDay, selectedMonth) => {
   const first = selectedMonth.utc().startOf("month");
   const days = first.daysInMonth();
