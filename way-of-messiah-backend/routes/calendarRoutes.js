@@ -26,7 +26,7 @@ router.get("/events", async (req, res) => {
     // Your schema’s primary date is startDate (UTC)
     const query = {
       isPublished: { $ne: false },
-      startDate: { $gte: fromUtc.toDate(), $lt: toUtc.toDate() },
+      date: { $gte: fromUtc.toDate(), $lt: toUtc.toDate() },
     };
 
     const docs = await Event.find(query).sort({ startDate: 1 }).lean();
