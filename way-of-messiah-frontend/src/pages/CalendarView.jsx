@@ -4,7 +4,8 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 
-import { fetchEventsForMonth } from "../lib/calendarApi";
+// We will fetch directly from CAL_BASE to avoid any helper mismatch
+import { CAL_BASE } from "../lib/api";
 
 import {
   normalizeEvent,
@@ -19,37 +20,70 @@ import {
 } from "../lib/calendarHelpers";
 
 export default function CalendarView() {
-  // Set the month you want to show first (today by default)
-  const [selectedMonth, setSelectedMonth] = useState(
-    dayjs.utc().startOf("month")
-  );
+  const [selectedMonth, setSelectedMonth] = useState(dayjs.utc().startOf("month"));
   const [events, setEvents] = useState([]);
+  const [debug, setDebug] = useState({ url: "", error: "", rawType: "", loaded: 0 });
 
-  // Fetch month events → normalize
+  // --- Month boundaries (UTC) ---
+  const firstOfMonth = selectedMonth.utc().startOf("month");
+  const firstWeekday = firstOfMonth.day(); // 0=Sun..6=Sat
+  const daysInMonth = firstOfMonth.daysInMonth();
+  const weeks = Math.ceil((firstWeekday + daysInMonth) / 7);
+  const rows = weeks === 6 ? 6 : 5;
+  const gridStart = firstOfMonth.subtract(firstWeekday, "day");
+
+  // --- Direct fetch to backend, normalize shape ---
   useEffect(() => {
     let cancel = false;
+
     (async () => {
+      const from = firstOfMonth.format("YYYY-MM-01");
+      const to = firstOfMonth.add(1, "month").format("YYYY-MM-01");
+      const url = `${CAL_BASE}/events?from=${from}&to=${to}`;
+
       try {
-        const raw = await fetchEventsForMonth(
-          selectedMonth.year(),
-          selectedMonth.month()
-        );
-        const safe = (Array.isArray(raw) ? raw : []).map(normalizeEvent);
-        if (!cancel) setEvents(safe);
+        setDebug((d) => ({ ...d, url, error: "", rawType: "…" }));
+
+        const r = await fetch(url, { credentials: "include" });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+        const json = await r.json();
+        const arr = Array.isArray(json)
+          ? json
+          : Array.isArray(json?.events)
+          ? json.events
+          : Array.isArray(json?.items)
+          ? json.items
+          : [];
+
+        const safe = (arr || []).map(normalizeEvent);
+
+        if (!cancel) {
+          setEvents(safe);
+          setDebug((d) => ({
+            ...d,
+            rawType: Array.isArray(json) ? "array" : json?.events ? "{events}" : json?.items ? "{items}" : "other",
+            loaded: safe.length,
+            error: "",
+          }));
+        }
       } catch (e) {
-        console.error("month fetch failed", e);
-        if (!cancel) setEvents([]);
+        if (!cancel) {
+          setEvents([]);
+          setDebug((d) => ({ ...d, error: String(e?.message || e), loaded: 0 }));
+        }
       }
     })();
+
     return () => {
       cancel = true;
     };
-  }, [selectedMonth]);
+  }, [CAL_BASE, firstOfMonth]); // re-fetch whenever month changes
 
-  // Group events by YYYY-MM-DD
+  // Group by day
   const byDay = useMemo(() => groupByDay(events), [events]);
 
-  // Derive the Enoch “Day 1” anchor from the earliest event with a "Day N" title
+  // Anchor for Enoch "Day N": earliest event with a "Day N" title
   const enochAnchor = useMemo(() => {
     const list = Array.isArray(events) ? events : [];
     const earliest = list
@@ -60,29 +94,16 @@ export default function CalendarView() {
       .filter(Boolean)
       .sort((a, b) => a.ymd.localeCompare(b.ymd))[0];
 
-    return earliest
-      ? dayjs.utc(earliest.ymd).subtract(earliest.n - 1, "day")
-      : null;
+    return earliest ? dayjs.utc(earliest.ymd).subtract(earliest.n - 1, "day") : null;
   }, [events]);
 
-  // Compute Day N for a given date
   const calculateEnochDay = (dateObj) => {
     if (!enochAnchor) return null;
     const ymd = dayjs.utc(dateObj).format("YYYY-MM-DD");
     return dayjs.utc(ymd).diff(enochAnchor, "day") + 1;
   };
 
-  // Grid math (Sunday-start). Use 5 rows unless the month needs 6.
-  const firstOfMonth = selectedMonth.utc().startOf("month");
-  const firstWeekday = firstOfMonth.day(); // 0=Sun..6=Sat
-  const daysInMonth = firstOfMonth.daysInMonth();
-  const weeks = Math.ceil((firstWeekday + daysInMonth) / 7);
-  const rows = weeks === 6 ? 6 : 5;
-
-  // Grid starts on the Sunday before/at the 1st of the month
-  const gridStart = firstOfMonth.subtract(firstWeekday, "day");
-
-  // Build Explanations panel contents
+  // Bottom panel items
   const explanationItems = useMemo(
     () => computeExplanationItems(byDay, selectedMonth),
     [byDay, selectedMonth]
@@ -115,12 +136,12 @@ export default function CalendarView() {
 
       cells.push(
         <div key={ymd} className={cellClass}>
-          {/* Gregorian date label — hidden on outside-month cells */}
+          {/* Gregorian date (blank for outside-month cells) */}
           <div className="text-xs font-semibold">
             {isCurrentMonth ? d.format("MMM D") : ""}
           </div>
 
-          {/* Computed Enoch Day number for current month */}
+          {/* Enoch Day N */}
           {isCurrentMonth && enochDay ? (
             <div className="text-[11px] text-gray-600">Day {enochDay}</div>
           ) : null}
@@ -139,7 +160,7 @@ export default function CalendarView() {
             </div>
           ) : null}
 
-          {/* Any non-"Day N" titles/descriptions (optional) */}
+          {/* Optional extra lines (non-"Day N" titles / descriptions) */}
           {(todaysEvents || [])
             .filter((e) => !/^\s*day\s*\d{1,3}\s*$/i.test(getTitle(e)))
             .map((e, idx) => (
@@ -158,72 +179,51 @@ export default function CalendarView() {
   return (
     <div className="max-w-6xl mx-auto p-4">
       {/* Title + subtitle */}
-      <h1 className="text-center text-2xl font-bold">
-        CONSECRATED DAYS OF YAHUAH
-      </h1>
+      <h1 className="text-center text-2xl font-bold">CONSECRATED DAYS OF YAHUAH</h1>
       <div className="text-center text-sm text-gray-600 mb-3">
         {selectedMonth.format("MMMM YYYY")} — Enoch 364 Day Calendar
       </div>
 
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-3">
-        <button onClick={goPrev} className="px-3 py-1 rounded bg-gray-200">
-          ← Prev
-        </button>
-        <button onClick={goToday} className="px-3 py-1 rounded bg-gray-200">
-          Today
-        </button>
-        <button onClick={goNext} className="px-3 py-1 rounded bg-gray-200">
-          Next →
-        </button>
-        <div className="ml-4 font-semibold">
-          {selectedMonth.format("YYYY-MM")}
-        </div>
+        <button onClick={goPrev} className="px-3 py-1 rounded bg-gray-200">← Prev</button>
+        <button onClick={goToday} className="px-3 py-1 rounded bg-gray-200">Today</button>
+        <button onClick={goNext} className="px-3 py-1 rounded bg-gray-200">Next →</button>
+        <div className="ml-4 font-semibold">{selectedMonth.format("YYYY-MM")}</div>
       </div>
-      {/* TEMP DEBUG */}
-      <div className="text-xs text-gray-600 mb-2">
-        events loaded: {Array.isArray(events) ? events.length : 0} • keys:{" "}
-        {Object.keys(byDay || {})
-          .slice(0, 5)
-          .join(", ") || "none"}
+
+      {/* DEBUG (remove later) */}
+      <div className="text-xs text-gray-700 mb-2 border rounded px-2 py-1 bg-gray-50">
+        <div><b>GET</b> {debug.url || "(building…)"}</div>
+        <div>
+          result: <b>{debug.loaded}</b> events
+          {" • "}shape: <b>{debug.rawType || "n/a"}</b>
+          {debug.error ? <> {" • "}error: <span className="text-red-600">{debug.error}</span></> : null}
+        </div>
       </div>
 
       {/* Weekday header */}
       <div className="grid grid-cols-7 text-xs font-semibold text-center mb-1">
-        {[
-          "Sunday",
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday",
-        ].map((d) => (
-          <div key={d} className="py-1 bg-gray-100">
-            {d}
-          </div>
+        {["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].map((d) => (
+          <div key={d} className="py-1 bg-gray-100">{d}</div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-px bg-gray-300">{renderCells()}</div>
+      <div className="grid grid-cols-7 gap-px bg-gray-300">
+        {renderCells()}
+      </div>
 
       {/* Explanations */}
       <div className="mt-4 border rounded p-3">
-        <div className="font-semibold mb-1">
-          Explanations for Set-Apart Days
-        </div>
+        <div className="font-semibold mb-1">Explanations for Set-Apart Days</div>
         {explanationItems.length === 0 ? (
-          <div className="text-sm text-gray-600">
-            No notes yet for this month.
-          </div>
+          <div className="text-sm text-gray-600">No notes yet for this month.</div>
         ) : (
           <ul className="text-sm space-y-1 max-h-48 overflow-auto pr-1">
             {explanationItems.map((it) => (
               <li key={it.ymd}>
-                <span className="font-medium">
-                  {dayjs.utc(it.ymd).format("MMM D")}:
-                </span>{" "}
+                <span className="font-medium">{dayjs.utc(it.ymd).format("MMM D")}:</span>{" "}
                 {it.labels.join(", ")}
               </li>
             ))}
